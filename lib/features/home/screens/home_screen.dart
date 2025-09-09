@@ -1,0 +1,425 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../core/constants.dart';
+import '../../reader/reading_page.dart';
+import '../../../data/repositories/stories_repository.dart';
+import '../../reader/story_details_screen.dart';
+import '../widgets/story_card.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  static const Map<String, String> topicThumb = {
+    'Fun & Adventure': 'assets/images/fun_and_adventure.png',
+    'Arts': 'assets/images/art.png',
+    'Family & Friends': 'assets/images/family_and_friend.png',
+    'Nature & Animals': 'assets/images/nature_and_animal.png',
+    'Fantasy': 'assets/images/fantasy.png',
+    'P.E. & Health': 'assets/images/Pe_and_health.png',
+  };
+
+  final _storiesRepo = StoriesRepository();
+
+  Future<Map<String, dynamic>?> _loadProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return null;
+
+    final row = await Supabase.instance.client
+        .from('profiles')
+        .select('interests, avatar_key')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (row == null) return null;
+
+    final interests = <String>[];
+    final raw = row['interests'];
+    if (raw is List) {
+      for (final v in raw) {
+        if (v is String) interests.add(v);
+      }
+    }
+
+    final avatarKey = row['avatar_key'] as String?;
+    return {
+      'interests': interests,
+      'avatarPath': _avatarAssetFromKey(avatarKey),
+    };
+  }
+
+  Future<Map<String, List<Story>>> _loadSections(List<String> interests) async {
+    final Map<String, List<Story>> out = {};
+    for (final topic in interests) {
+      out[topic] = await _storiesRepo.listByTopic(topic, limit: 6);
+    }
+    return out;
+  }
+
+  Future<List<Story>> _loadContinueReading() async {
+    return _storiesRepo.listReadingHistory(limit: 6);
+  }
+
+  static String _avatarAssetFromKey(String? key) {
+    switch (key) {
+      case 'boy': return 'assets/images/boy.png';
+      case 'girl': return 'assets/images/girl.png';
+      case 'dog': return 'assets/images/dog.png';
+      case 'cat': return 'assets/images/cat.png';
+      case 'hamster': return 'assets/images/hamster.png';
+      case 'chimpmuck': return 'assets/images/chimpmuck.png';
+      case 'pup': return 'assets/images/dog.png';
+      case 'cub': return 'assets/images/hamster.png';
+      case 'owl': return 'assets/images/cat.png';
+      case 'bunny': return 'assets/images/hamster.png';
+      default: return 'assets/images/avatar_placeholder.png';
+    }
+  }
+
+  void _openReader({String? topic}) {
+    final sample = (topic == null)
+        ? "Kapag nakita ni Luna ang maliwanag na buwan, bumulong siya ng 'hello' at ngumiti."
+        : "Basahin natin tungkol sa $topic. Dahan-dahan nating basahin ang bawat salita.";
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ReadingPage(pageText: sample)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _loadProfile(),
+      builder: (context, snap) {
+        final loadingProfile = snap.connectionState != ConnectionState.done;
+        final data = snap.data;
+        final interests =
+            (data?['interests'] as List<String>?) ?? const <String>[];
+        final avatarPath = (data?['avatarPath'] as String?) ??
+            'assets/images/avatar_placeholder.png';
+
+        return FutureBuilder<Map<String, List<Story>>>(
+          future: loadingProfile ? null : _loadSections(interests),
+          builder: (context, secSnap) {
+            final loadingSections = loadingProfile ||
+                (secSnap.connectionState != ConnectionState.done &&
+                    interests.isNotEmpty);
+            final sections = secSnap.data ?? const <String, List<Story>>{};
+
+            return Scaffold(
+              appBar: AppBar(
+                backgroundColor: const Color(brandPurple),
+                foregroundColor: Colors.white,
+                title: const Text('STORYTOTS'),
+                actions: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: CircleAvatar(
+                      radius: 16,
+                      backgroundImage: AssetImage(avatarPath),
+                      onBackgroundImageError: (_, __) {},
+                    ),
+                  ),
+                ],
+              ),
+              body: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset('assets/images/storytots_background.png',
+                      fit: BoxFit.cover),
+                  Container(color: Colors.white.withOpacity(0.92)),
+
+                  if (loadingSections)
+                    const Center(child: CircularProgressIndicator())
+                  else
+                    ListView(
+                      padding:
+                          const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                      children: [
+                        // Search
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: const [
+                              BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4)),
+                            ],
+                          ),
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.search_rounded),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                    hintText: 'Search',
+                                    border: InputBorder.none,
+                                  ),
+                                ),
+                              ),
+                              // mic icon is decorative for now
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Header banner
+                        GestureDetector(
+                          onTap: () => _openReader(),
+                          child: Container(
+                            height: 140,
+                            decoration: BoxDecoration(
+                              color: Colors.pinkAccent.withOpacity(.2),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: const [
+                                BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 10,
+                                    offset: Offset(0, 6))
+                              ],
+                              image: const DecorationImage(
+                                image: AssetImage(
+                                    'assets/images/covers/header_banner.png'),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+                        _sectionTitle('CONTINUE READING'),
+                        const SizedBox(height: 10),
+
+                        // ✅ Continue Reading driven by DB (FIFO)
+                        FutureBuilder<List<Story>>(
+                          future: _loadContinueReading(),
+                          builder: (context, crSnap) {
+                            if (crSnap.connectionState !=
+                                ConnectionState.done) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
+                            }
+                            final stories = crSnap.data ?? [];
+
+                            if (stories.isEmpty) {
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 8,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Text(
+                                  "No reading yet — let’s start an adventure! 📚✨\nTap any story to begin.",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return SizedBox(
+                              height: 150,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: stories.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(width: 12),
+                                itemBuilder: (_, i) {
+                                  final story = stories[i];
+                                  return StoryCard(
+                                    story: story,
+                                    onTap: () {
+                                      // Optional: mark progress immediately
+                                      _storiesRepo.touchReadingHistory(story.id);
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => StoryDetailsScreen(
+                                              storyId: story.id),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        if (interests.isEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: const [
+                                BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 10,
+                                    offset: Offset(0, 4)),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                const Text('Choose Topics of Interest',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w700)),
+                                const SizedBox(height: 8),
+                                const Text(
+                                    'Personalize StoryTots by selecting topics your child loves.'),
+                                const SizedBox(height: 12),
+                                FilledButton(
+                                  onPressed: () => Navigator.pushNamed(
+                                      context, '/onboarding'),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor:
+                                        const Color(brandPurple),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                  ),
+                                  child: const Text('Pick topics'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ] else ...[
+                          for (final topic in interests) ...[
+                            const SizedBox(height: 20),
+                            _sectionTitle(
+                              topic,
+                              trailing: Icons.chevron_right_rounded,
+                              onTap: () {
+                                // TODO: navigate to topic page
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            _storyRow(sections[topic] ?? const []),
+                          ],
+                        ],
+                      ],
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _sectionTitle(String text,
+      {IconData? trailing, VoidCallback? onTap}) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            text.toUpperCase(),
+            style: const TextStyle(
+              letterSpacing: 3,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        if (trailing != null)
+          IconButton(onPressed: onTap, icon: Icon(trailing)),
+      ],
+    );
+  }
+
+  Widget _bookSquare({String? coverAsset, VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 90,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))
+          ],
+          image: DecorationImage(
+            image: AssetImage(
+                coverAsset ?? 'assets/images/book_cover_placeholder.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _storyRow(List<Story> stories) {
+    if (stories.isEmpty) {
+      return SizedBox(
+        height: 150,
+        child: Row(
+          children: [
+            Expanded(child: _emptyCard()),
+            const SizedBox(width: 12),
+            Expanded(child: _emptyCard()),
+            const SizedBox(width: 12),
+            Expanded(child: _emptyCard()),
+          ],
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 150,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: stories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) => StoryCard(
+          story: stories[i],
+          onTap: () {
+            _storiesRepo.touchReadingHistory(stories[i].id);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    StoryDetailsScreen(storyId: stories[i].id),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))
+        ],
+      ),
+    );
+  }
+}

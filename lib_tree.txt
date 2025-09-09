@@ -1,0 +1,84 @@
+lib
+├── app.dart
+├── core
+│   ├── constants.dart
+│   ├── router.dart
+│   └── widgets
+│       ├── st_button.dart
+│       ├── st_card.dart
+│       └── st_text_field.dart
+├── data
+│   ├── repositories
+│   │   ├── activities_repository.dart
+│   │   ├── auth_repository.dart
+│   │   ├── books_repository.dart
+│   │   ├── library_repository.dart
+│   │   ├── profile_repository.dart
+│   │   └── voice_repository.dart
+│   └── supabase
+│       ├── client.dart
+│       └── tables
+│           └── profile.dart
+├── features
+│   ├── activities
+│   │   ├── logic
+│   │   ├── screens
+│   │   └── widgets
+│   ├── auth
+│   │   ├── logic
+│   │   ├── screens
+│   │   │   ├── forgot_password_screen.dart
+│   │   │   ├── login_screen.dart
+│   │   │   ├── otp_email_screen.dart
+│   │   │   ├── otp_verify_screen.dart
+│   │   │   ├── signup_screen.dart
+│   │   │   └── verify_email_screen.dart
+│   │   └── widgets
+│   ├── home
+│   │   ├── logic
+│   │   ├── screens
+│   │   │   └── home_screen.dart
+│   │   └── widgets
+│   ├── interests
+│   │   ├── logic
+│   │   ├── screens
+│   │   │   ├── onboarding_flow.dart
+│   │   │   ├── pick_goals_screen.dart
+│   │   │   └── pick_topics_screen.dart
+│   │   └── widgets
+│   ├── library
+│   │   ├── logic
+│   │   ├── screens
+│   │   │   ├── downloads_screen.dart
+│   │   │   ├── favorites_screen.dart
+│   │   │   ├── history_screen.dart
+│   │   │   └── library_screen.dart
+│   │   └── widgets
+│   ├── reader
+│   │   ├── karaoke_text.dart
+│   │   ├── reading_page.dart
+│   │   └── speech
+│   │       ├── engine.dart
+│   │       └── stt_engine.dart
+│   ├── settings
+│   │   ├── logic
+│   │   ├── screens
+│   │   │   ├── about_screen.dart
+│   │   │   ├── help_screen.dart
+│   │   │   ├── notifications_screen.dart
+│   │   │   ├── profile_screen.dart
+│   │   │   └── settings_screen.dart
+│   │   └── widgets
+│   ├── shell
+│   │   └── main_tabs.dart
+│   ├── stories
+│   │   ├── logic
+│   │   ├── screens
+│   │   └── widgets
+│   └── voice
+│       ├── logic
+│       ├── screens
+│       └── widgets
+└── main.dart
+
+43 directories, 39 files

@@ -1,0 +1,5 @@
+const supabaseUrl = 'https://njoyhmnvkhkezolctzfj.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qb3lobW52a2hrZXpvbGN0emZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDkyNzIsImV4cCI6MjA3MDcyNTI3Mn0.jvBceijh56xZkBeQyfAN8b124I22hTQG6xWb81mcB5c';
+
+const brandPurple = 0xFF3E2A64;
+const appBg = 0xFFF4F6FB;
