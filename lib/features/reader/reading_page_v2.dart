@@ -1,4 +1,5 @@
 // lib/features/reader/reading_page_v2.dart
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -17,7 +18,7 @@ class ReadingPageV2 extends StatefulWidget {
     super.key,
     required this.pageText,
     this.minAccuracy = 0.85,
-    this.speechServiceType = SpeechServiceType.deviceSTT, // Toggle this
+    this.speechServiceType = SpeechServiceType.deviceSTT, // Always use device STT
     // Optional: provide to enable favorite toggle and library sync
     this.storyId,
     this.storyTitle,
@@ -62,6 +63,9 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
   final _libraryRepo = LibraryRepository();
   bool? _isFavorite; // null -> unknown/loading
 
+  // Timer for status polling
+  Timer? _statusTimer;
+
   @override
   void initState() {
     super.initState();
@@ -73,10 +77,19 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
     _initTts();
     _initSpeechService();
     _loadFavorite();
+
+    // Periodically sync UI with engine listening state
+    _statusTimer = Timer.periodic(const Duration(milliseconds: 600), (_) {
+      final ls = _speechService.isListening;
+      if (mounted && ls != _listening) {
+        setState(() => _listening = ls);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _statusTimer?.cancel();
     _stopListen();
     _tts.stop();
     super.dispose();
@@ -113,18 +126,33 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
 
   // ---------- Speech Service ----------
   Future<void> _initSpeechService() async {
-    // Handle permissions for both services
+    // Handle permissions for both platforms
     if (Platform.isAndroid) {
       final mic = await Permission.microphone.status;
       if (!mic.isGranted) {
         final res = await Permission.microphone.request();
         if (!res.isGranted) {
           setState(() => _serviceReady = false);
-          _showServiceNotReadyDialog(
-            'Microphone permission is required for speech recognition.',
-          );
+          _showServiceNotReadyDialog('Microphone permission is required for speech recognition.');
           return;
         }
+      }
+    } else if (Platform.isIOS) {
+      // iOS needs both Speech and Microphone permissions
+      final mic = await Permission.microphone.status;
+      if (!mic.isGranted) {
+        await Permission.microphone.request();
+      }
+      final speech = await Permission.speech.status;
+      if (!speech.isGranted) {
+        await Permission.speech.request();
+      }
+      final micOk = await Permission.microphone.isGranted;
+      final speechOk = await Permission.speech.isGranted;
+      if (!micOk || !speechOk) {
+        setState(() => _serviceReady = false);
+        _showServiceNotReadyDialog('Please allow Microphone and Speech Recognition in Settings to enable reading.');
+        return;
       }
     }
 
@@ -132,13 +160,16 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
     setState(() => _serviceReady = ok);
 
     if (!ok && mounted) {
-      final serviceName = SpeechServiceFactory.getServiceName(
-        widget.speechServiceType,
-      );
-      final errorMsg = widget.speechServiceType == SpeechServiceType.azureSpeech
+      final serviceName = SpeechServiceFactory.getServiceName(widget.speechServiceType);
+      final errorMsg = widget.speechServiceType == SpeechServiceType.openaiWhisper
           ? '$serviceName is not available. Please check your network connection and configuration.'
           : '$serviceName is not available. Please check your device settings.';
       _showServiceNotReadyDialog(errorMsg);
+    }
+
+    // Auto-start listening when ready
+    if (ok && mounted && !_listening) {
+      await _startListen();
     }
   }
 
@@ -171,7 +202,7 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
     switch (widget.speechServiceType) {
       case SpeechServiceType.deviceSTT:
         return [Colors.green[100]!, Colors.green[300]!, Colors.green[700]!];
-      case SpeechServiceType.azureSpeech:
+      case SpeechServiceType.openaiWhisper:
         return [Colors.blue[100]!, Colors.blue[300]!, Colors.blue[700]!];
       // case SpeechServiceType.googleCloudAPI:
       //   return [Colors.blue[100]!, Colors.blue[300]!, Colors.blue[700]!];
@@ -186,7 +217,7 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
     switch (widget.speechServiceType) {
       case SpeechServiceType.deviceSTT:
         return Icons.phone_android;
-      case SpeechServiceType.azureSpeech:
+      case SpeechServiceType.openaiWhisper:
         return Icons.cloud_queue;
       // case SpeechServiceType.googleCloudAPI:
       //   return Icons.cloud;
@@ -200,21 +231,39 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
   String? get _resolvedLocaleFromToggle {
     switch (_lang) {
       case 'English':
-        if (widget.speechServiceType == SpeechServiceType.azureSpeech) {
-          return 'en-US';
-        } else {
-          return 'en_US'; // Device STT
-        }
+        if (Platform.isIOS) return 'en-US';
+        return 'en_US';
       case 'Filipino':
-        if (widget.speechServiceType == SpeechServiceType.azureSpeech) {
-          return 'fil-PH';
-        } else {
-          return 'fil-PH'; // Device STT
-        }
+        if (Platform.isIOS) return 'fil-PH';
+        return 'fil-PH';
       case 'Auto':
       default:
         return null;
     }
+  }
+
+  // Provide a simple pronunciation hint for the current word
+  String get _pronounceHint {
+    if (_cursor >= _displayTokens.length) return '';
+    var w = _displayTokens[_cursor].toLowerCase();
+    w = w.replaceAll(RegExp(r'[^a-z]'), '');
+    if (w.isEmpty) return '';
+
+    const vowels = 'aeiou';
+    final buf = StringBuffer();
+    for (int i = 0; i < w.length; i++) {
+      final ch = w[i];
+      buf.write(ch);
+      final isVowel = vowels.contains(ch);
+      if (isVowel && i < w.length - 1) {
+        buf.write('-');
+      }
+    }
+    var hint = buf.toString();
+    hint = hint.replaceAll(RegExp(r'-+'), '-');
+    if (hint.startsWith('-')) hint = hint.substring(1);
+    if (hint.endsWith('-')) hint = hint.substring(0, hint.length - 1);
+    return hint;
   }
 
   Future<void> _startListen() async {
@@ -451,7 +500,6 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
   @override
   Widget build(BuildContext context) {
     final total = _displayTokens.length;
-    final currentNum = min(_cursor + 1, total);
     final serviceName = SpeechServiceFactory.getServiceName(
       widget.speechServiceType,
     );
@@ -496,8 +544,8 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
             ),
           ),
           IconButton(
-            tooltip: _listening ? 'Stop listening' : 'Start listening',
-            icon: Icon(_listening ? Icons.mic_off : Icons.mic),
+            tooltip: _listening ? 'Listening (tap to stop)' : 'Start listening',
+            icon: Icon(_listening ? Icons.mic : Icons.mic_off),
             onPressed: !_serviceReady
                 ? null
                 : () async {
@@ -544,103 +592,146 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
                         color: _getServiceColor()[2],
                       ),
                     ),
+                    if (_listening) ...[
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.redAccent),
+                        ),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.mic, size: 14, color: Colors.redAccent),
+                            SizedBox(width: 4),
+                            Text('Listening…', style: TextStyle(fontSize: 12, color: Colors.redAccent)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
 
-              // Score + progress
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Accuracy: ${(_accuracy * 100).toStringAsFixed(0)}%'),
-                  Text('Word $currentNum/$total'),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Debug: heard text
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _lastHeard.isEmpty ? '—' : 'Heard: $_lastHeard',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Helper text
-              if (!_listening)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    '👆 Tap any word to mark it as correct, or use the mic to read aloud',
-                    style: TextStyle(color: Colors.black54, fontSize: 13),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
-              // Karaoke (tap word to mark as read, or use mic)
-              GestureDetector(
-                behavior: HitTestBehavior.translucent,
+              // Karaoke text display
+              Expanded(
                 child: SingleChildScrollView(
-                  child: Stack(
-                    children: [
-                      // Tap handler
-                      if (!_listening)
-                        Positioned.fill(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) =>
-                                SingleChildScrollView(
-                                  child: Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: List.generate(
-                                      _displayTokens.length,
-                                      (i) => GestureDetector(
-                                        onTap: () {
-                                          if (i == _cursor) {
-                                            _speakCurrent(); // Play word
-                                            setState(() {
-                                              if (_status[i] !=
-                                                  WordStatus.correct) {
-                                                _status[i] = WordStatus.correct;
-                                                _correct++;
-                                              }
-                                              _cursor++;
-                                              if (_cursor <
-                                                  _matchTokens.length) {
-                                                _status[_cursor] =
-                                                    WordStatus.current;
-                                              }
-                                            });
-                                          }
-                                        },
-                                        child: SizedBox(
-                                          height: 32,
-                                          child: Text(_displayTokens[i]),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                          ),
-                        ),
-
-                      // Actual karaoke display
-                      KaraokeText(
-                        tokens: _displayTokens,
-                        statuses: _status,
-                        currentIndex: _cursor,
-                      ),
-                    ],
+                  child: GestureDetector(
+                    // Long-press to hear pronunciation only (does not mark correct)
+                    onLongPress: () {
+                      _speakCurrent();
+                    },
+                    child: KaraokeText(
+                      tokens: _displayTokens,
+                      statuses: _status,
+                      currentIndex: _cursor,
+                    ),
                   ),
                 ),
               ),
 
               const Spacer(),
+
+              // Red mic button in center
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: _listening ? Colors.red.shade600 : Colors.red,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    onPressed: !_serviceReady
+                        ? null
+                        : () async {
+                            if (_listening) {
+                              await _stopListen();
+                            } else {
+                              await _startListen();
+                            }
+                          },
+                    icon: Icon(
+                      _listening ? Icons.mic : Icons.mic_off,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Accuracy information at bottom
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Accuracy: ${(_accuracy * 100).toStringAsFixed(0)}%',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          'Word ${min(_cursor + 1, total)}/$total',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_cursor < _matchTokens.length) ...[
+                      Text(
+                        'Expected: ${_displayTokens[_cursor]}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if ((_status[_cursor] == WordStatus.incorrect) && _pronounceHint.isNotEmpty)
+                        Text(
+                          'Say it like: $_pronounceHint',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.red,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                    ],
+                    Text(
+                      'Heard: ${_lastHeard.isEmpty ? '—' : _lastHeard}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
 
               // Controls
               Row(

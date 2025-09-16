@@ -92,7 +92,7 @@ class ReadingPageDemo extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => const ReadingPageV2(
                       pageText: sampleText,
-                      speechServiceType: SpeechServiceType.azureSpeech,
+                      speechServiceType: SpeechServiceType.deviceSTT,
                     ),
                   ),
                 ),

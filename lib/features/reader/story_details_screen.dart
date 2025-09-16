@@ -3,7 +3,9 @@ import 'package:storytots/core/constants.dart';
 import 'package:storytots/data/cover_assets.dart';
 import 'package:storytots/data/repositories/stories_repository.dart';
 import 'package:storytots/data/repositories/library_repository.dart';
-import 'reading_page.dart';
+import 'package:storytots/data/story_content.dart';
+import 'reading_page_v2.dart';
+import 'speech/speech_service_factory.dart';
 
 class StoryDetailsScreen extends StatefulWidget {
   final String storyId;
@@ -98,113 +100,129 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                 SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      _CoverBox(title: story.title, coverUrl: story.coverUrl),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(brandPurple),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Text(
-                          story.title,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          _roundIconButton(
-                            Icons.favorite,
-                            onTap: () async {
-                              // mirror AppBar favorite toggle for convenience
-                              final favNow = !(_isFavorite ?? false);
-                              setState(() => _isFavorite = favNow);
-                              try {
-                                await libraryRepo.ensureRow(
-                                  storyId: story.id,
-                                  title: story.title,
-                                  coverUrl: story.coverUrl ?? coverAssetForTitle(story.title),
-                                );
-                                await libraryRepo.toggleFavorite(story.id, favNow);
-                              } catch (_) {
-                                setState(() => _isFavorite = !favNow);
-                              }
-                            },
+                          _CoverBox(title: story.title, coverUrl: story.coverUrl),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(brandPurple),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Text(
+                              story.title,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                            ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: SizedBox(
-                              height: 44,
-                              child: FilledButton(
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: const Color(brandPurple),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                ),
-                                onPressed: () async {
+                          const SizedBox(height: 14),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _roundIconButton(
+                                Icons.favorite,
+                                onTap: () async {
+                                  // mirror AppBar favorite toggle for convenience
+                                  final favNow = !(_isFavorite ?? false);
+                                  setState(() => _isFavorite = favNow);
                                   try {
-                                    await libraryRepo.recordOpen(
+                                    await libraryRepo.ensureRow(
                                       storyId: story.id,
                                       title: story.title,
-                                      coverUrl: (story.coverUrl?.isNotEmpty == true)
-                                          ? story.coverUrl
-                                          : coverAssetForTitle(story.title),
+                                      coverUrl: story.coverUrl ?? coverAssetForTitle(story.title),
                                     );
-                                  } catch (_) {}
-
-                                  final text = story.synopsis?.isNotEmpty == true
-                                      ? story.synopsis!
-                                      : 'Let’s read ${story.title}.';
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ReadingPage(
-                                        pageText: text,
-                                        storyId: story.id,
-                                        storyTitle: story.title,
-                                        coverUrl: story.coverUrl ?? coverAssetForTitle(story.title),
-                                      ),
-                                    ),
-                                  );
+                                    await libraryRepo.toggleFavorite(story.id, favNow);
+                                  } catch (_) {
+                                    setState(() => _isFavorite = !favNow);
+                                  }
                                 },
-                                child: const Text('Read'),
                               ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 44,
+                                  child: FilledButton(
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: const Color(brandPurple),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                    ),
+                                    onPressed: () async {
+                                      try {
+                                        await libraryRepo.recordOpen(
+                                          storyId: story.id,
+                                          title: story.title,
+                                          coverUrl: (story.coverUrl?.isNotEmpty == true)
+                                              ? story.coverUrl
+                                              : coverAssetForTitle(story.title),
+                                        );
+                                      } catch (_) {}
+
+                                      // Try to get story content from local mapping first
+                                      String text;
+                                      if (StoryContent.hasContent(story.id)) {
+                                        // Get the first page of the story content
+                                        final pages = StoryContent.getPagesById(story.id);
+                                        text = pages?.first ?? StoryContent.getContentById(story.id)!;
+                                      } else {
+                                        // Fallback to synopsis or placeholder
+                                        text = story.synopsis?.isNotEmpty == true
+                                            ? story.synopsis!
+                                            : 'Let\'s read ${story.title}.';
+                                      }
+                                      
+                                      // Use reading page for all stories
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ReadingPageV2(
+                                            pageText: text,
+                                            storyId: story.id,
+                                            storyTitle: story.title,
+                                            coverUrl: story.coverUrl ?? coverAssetForTitle(story.title),
+                                            speechServiceType: SpeechServiceType.deviceSTT,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text('Read'),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              _roundIconButton(Icons.add, onTap: () {}),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 6))],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Synopsis of the story:',
+                                  style: TextStyle(letterSpacing: 2.0, fontWeight: FontWeight.w800),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(story.synopsis ?? '—'),
+                                const SizedBox(height: 16),
+                                _kv('Written by:', story.writtenBy),
+                                _kv('Illustrated by:', story.illustratedBy),
+                                _kv('Published:', story.publishedBy),
+                                _kv('Reading Age:', story.readingAge),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          _roundIconButton(Icons.add, onTap: () {}),
                         ],
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 6))],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Synopsis of the story:',
-                              style: TextStyle(letterSpacing: 2.0, fontWeight: FontWeight.w800),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(story.synopsis ?? '—'),
-                            const SizedBox(height: 16),
-                            _kv('Written by:', story.writtenBy),
-                            _kv('Illustrated by:', story.illustratedBy),
-                            _kv('Published:', story.publishedBy),
-                            _kv('Reading Age:', story.readingAge),
-                          ],
-                        ),
                       ),
                     ],
                   ),

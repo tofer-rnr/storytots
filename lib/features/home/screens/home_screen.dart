@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants.dart';
-import '../../reader/reading_page.dart';
 import '../../../data/repositories/stories_repository.dart';
 import '../../reader/story_details_screen.dart';
+import '../../reader/reading_page_v2.dart';
+import '../../reader/speech/speech_service_factory.dart';
 import '../widgets/story_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -86,7 +87,15 @@ class _HomeScreenState extends State<HomeScreen> {
         : "Basahin natin tungkol sa $topic. Dahan-dahan nating basahin ang bawat salita.";
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ReadingPage(pageText: sample)),
+      MaterialPageRoute(
+        builder: (_) => ReadingPageV2(
+          pageText: sample,
+          storyId: 'demo',
+          storyTitle: topic ?? 'Demo Story',
+          coverUrl: '',
+          speechServiceType: SpeechServiceType.deviceSTT,
+        ),
+      ),
     );
   }
 
