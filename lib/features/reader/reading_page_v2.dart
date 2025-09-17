@@ -66,6 +66,11 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
   // Timer for status polling
   Timer? _statusTimer;
 
+  // Track last mispronounced word
+  String? _wrongWord;
+  String? _wrongHeard;
+  String? _wrongHint;
+
   @override
   void initState() {
     super.initState();
@@ -122,6 +127,12 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
     if (_cursor < 0 || _cursor >= _displayTokens.length) return;
     await _tts.stop();
     await _tts.speak(_displayTokens[_cursor]);
+  }
+
+  // Speak any word with TTS
+  Future<void> _speakWord(String w) async {
+    await _tts.stop();
+    await _tts.speak(w);
   }
 
   // ---------- Speech Service ----------
@@ -266,6 +277,48 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
     return hint;
   }
 
+  // --- similarity helpers for wrong-word diagnostics ---
+  int _levenshtein(String a, String b) {
+    if (a == b) return 0;
+    final m = a.length, n = b.length;
+    if (m == 0) return n;
+    if (n == 0) return m;
+    final d = List.generate(m + 1, (_) => List<int>.filled(n + 1, 0));
+    for (int i = 0; i <= m; i++) d[i][0] = i;
+    for (int j = 0; j <= n; j++) d[0][j] = j;
+    for (int i = 1; i <= m; i++) {
+      for (int j = 1; j <= n; j++) {
+        final cost = a[i - 1] == b[j - 1] ? 0 : 1;
+        d[i][j] = [
+          d[i - 1][j] + 1,
+          d[i][j - 1] + 1,
+          d[i - 1][j - 1] + cost,
+        ].reduce((x, y) => x < y ? x : y);
+      }
+    }
+    return d[m][n];
+  }
+
+  double _similarity(String a, String b) {
+    final maxL = max(a.length, b.length);
+    if (maxL == 0) return 1.0;
+    return (maxL - _levenshtein(a, b)) / maxL;
+  }
+
+  String? _closestInTail(String target, List<String> tail) {
+    if (tail.isEmpty) return null;
+    String best = tail.last;
+    double bestScore = _similarity(best, target);
+    for (final w in tail) {
+      final s = _similarity(w, target);
+      if (s > bestScore) {
+        best = w;
+        bestScore = s;
+      }
+    }
+    return best;
+  }
+
   Future<void> _startListen() async {
     if (!_serviceReady) return;
     _heardBuffer.clear();
@@ -316,6 +369,10 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
 
     setState(() {
       if (matched) {
+        // clear wrong diagnostics when correct
+        _wrongWord = null;
+        _wrongHeard = null;
+        _wrongHint = null;
         if (_status[_cursor] != WordStatus.correct) {
           _status[_cursor] = WordStatus.correct;
           _correct++;
@@ -326,6 +383,11 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
         }
       } else {
         _status[_cursor] = WordStatus.incorrect;
+        // capture wrong diagnostics
+        final heard = _closestInTail(currentTarget, tail);
+        _wrongWord = _displayTokens[_cursor];
+        _wrongHeard = heard;
+        _wrongHint = _syllablesOf(_wrongWord!);
       }
     });
   }
@@ -727,6 +789,51 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
                         color: Colors.black54,
                       ),
                     ),
+
+                    if (_wrongWord != null) ...[
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Try: ${_wrongWord!}',
+                                style: const TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                              if (_wrongHeard != null) ...[
+                                const SizedBox(height: 4),
+                                Text('You said: ${_wrongHeard!}', style: const TextStyle(color: Colors.black54)),
+                              ],
+                              const SizedBox(height: 4),
+                              Text(
+                                _wrongHint ?? '',
+                                style: const TextStyle(color: Colors.redAccent, fontStyle: FontStyle.italic),
+                              ),
+                              const SizedBox(height: 6),
+                              FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(brandPurple),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                onPressed: () => _speakWord(_wrongWord!),
+                                icon: const Icon(Icons.volume_up),
+                                label: const Text('Hear it'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    ],
                   ],
                 ),
               ),
@@ -770,5 +877,21 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
         ),
       ),
     );
+  }
+
+  String _syllablesOf(String word) {
+    var w = word.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
+    if (w.isEmpty) return '';
+    const vowels = 'aeiou';
+    final buf = StringBuffer();
+    for (int i = 0; i < w.length; i++) {
+      final ch = w[i];
+      buf.write(ch);
+      if (vowels.contains(ch) && i < w.length - 1) buf.write('-');
+    }
+    var hint = buf.toString().replaceAll(RegExp(r'-+'), '-');
+    if (hint.startsWith('-')) hint = hint.substring(1);
+    if (hint.endsWith('-')) hint = hint.substring(0, hint.length - 1);
+    return hint;
   }
 }

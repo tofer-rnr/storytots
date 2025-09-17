@@ -36,6 +36,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/covers/
+    - assets/stories/
 
 flutter_launcher_icons:
   android: true
