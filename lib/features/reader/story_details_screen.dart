@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:storytots/core/constants.dart';
 import 'package:storytots/data/cover_assets.dart';
 import 'package:storytots/data/repositories/stories_repository.dart';
 import 'package:storytots/data/repositories/library_repository.dart';
 import 'package:storytots/data/story_content.dart';
+import 'package:storytots/data/story_asset_service.dart';
+import 'package:storytots/data/stories_index.dart';
 import 'reading_page_v2.dart';
 import 'speech/speech_service_factory.dart';
 
@@ -24,6 +27,56 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   void initState() {
     super.initState();
     _loadFavorite();
+  }
+
+  // Helper to convert a title to a slug for asset lookup
+  String _slugifyTitle(String title) {
+    // First handle special cases with direct lookup
+    final lowerTitle = title.toLowerCase();
+    
+    // Handle special cases - story titles
+    if (lowerTitle.contains('monkey') && lowerTitle.contains('turtle')) {
+      return 'the-monkey-and-the-turtle';
+    } else if (lowerTitle.contains('unggoy') && lowerTitle.contains('pagong')) {
+      return 'the-monkey-and-the-turtle';  // Tagalog version
+    } else if (lowerTitle.contains('alamat') && lowerTitle.contains('saging')) {
+      return 'alamat-ng-saging';
+    } else if (lowerTitle.contains('legend') && lowerTitle.contains('banana')) {
+      return 'alamat-ng-saging';  // English version
+    } else if (lowerTitle.contains('alamat') && lowerTitle.contains('sampaguita')) {
+      return 'alamat-ng-sampaguita';
+    } else if (lowerTitle.contains('legend') && lowerTitle.contains('sampaguita')) {
+      return 'alamat-ng-sampaguita'; // English version
+    } else if (lowerTitle.contains('sky') && lowerTitle.contains('high')) {
+      return 'why-the-sky-is-high';
+    } else if (lowerTitle.contains('carabao') && lowerTitle.contains('shell')) {
+      return 'the-carabao-and-the-shell';
+    } else if (lowerTitle.contains('bitter') && lowerTitle.contains('gourd')) {
+      return 'the-legend-of-the-bitter-gourd';
+    } else if (lowerTitle.contains('ampalaya')) {
+      return 'the-legend-of-the-bitter-gourd';  // Tagalog version
+    } else if (lowerTitle.contains('rainbow')) {
+      return 'the-legend-of-the-rainbow';
+    } else if ((lowerTitle.contains('salty') && lowerTitle.contains('sea')) ||
+              (lowerTitle.contains('ocean') && lowerTitle.contains('salt'))) {
+      return 'why-the-ocean-is-salty';
+    } else if (lowerTitle.contains('juan') && lowerTitle.contains('tamad')) {
+      return 'stories-of-juan-tamad';
+    } else if (lowerTitle.contains('lion') && lowerTitle.contains('mouse')) {
+      return 'the-lion-and-the-mouse';
+    } else if (lowerTitle.contains('ant') && lowerTitle.contains('grasshopper')) {
+      return 'the-ant-and-the-grasshopper';
+    } else if (lowerTitle.contains('pineapple') || lowerTitle.contains('piña')) {
+      return 'legend-of-the-pineapple';
+    }
+    
+    // If no special case matches, normalize the string
+    final normalized = lowerTitle
+      .replaceAll(RegExp(r'[^\w\s-]'), '') // Remove special chars
+      .replaceAll(RegExp(r'\s+'), '-');    // Replace spaces with hyphens
+    
+    print('📚 Title: "$title" => Slug: "$normalized" (no special case match)');
+    return normalized;
   }
 
   Future<void> _loadFavorite() async {
@@ -161,17 +214,117 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                         );
                                       } catch (_) {}
 
-                                      // Try to get story content from local mapping first
-                                      String text;
-                                      if (StoryContent.hasContent(story.id)) {
-                                        // Get the first page of the story content
-                                        final pages = StoryContent.getPagesById(story.id);
-                                        text = pages?.first ?? StoryContent.getContentById(story.id)!;
-                                      } else {
-                                        // Fallback to synopsis or placeholder
-                                        text = story.synopsis?.isNotEmpty == true
-                                            ? story.synopsis!
-                                            : 'Let\'s read ${story.title}.';
+                                      // Try to load story content from assets
+                                      String text = 'Let\'s read ${story.title}.';  // Default text
+                                      bool contentLoaded = false;
+                                      
+                                      try {
+                                        // First, determine if we have this story in assets
+                                        final storySlug = _slugifyTitle(story.title);
+                                        // Language is either 'tl' or defaults to 'en'
+                                        final language = story.language.toLowerCase() == 'tl' ? 'tl' : 'en';
+                                        
+                                        print('📚 --------- STORY LOADING ----------');
+                                        print('📚 Story title: "${story.title}" (ID: ${story.id})');
+                                        print('📚 Story slug: "$storySlug", language: "$language"');
+                                        print('📚 ---------------------------------');
+                                        
+                                        // DIRECT APPROACH: Try loading directly by slug
+                                        try {
+                                          print('📚 ATTEMPT 1: Direct loading with slug');
+                                          text = await StoryAssetService.loadPageContent(
+                                            slug: storySlug,
+                                            language: language,
+                                          );
+                                          print('📚 ✅ SUCCESS: Content loaded directly, length: ${text.length} chars');
+                                          contentLoaded = true;
+                                        } catch (directError) {
+                                          print('📚 ❌ FAILED direct loading: $directError');
+                                          
+                                          // SEARCH APPROACH: Search through index
+                                          print('📚 ATTEMPT 2: Searching index for matching story');
+                                          bool foundInAssets = false;
+                                          
+                                          for (var item in StoriesIndex.items) {
+                                            print('📚 Checking index: "${item.title}" (${item.slug}) [${item.language}]');
+                                            
+                                            // Method 1: Direct slug match
+                                            if (item.slug == storySlug && item.language == language) {
+                                              print('📚 ✓ MATCH! (direct slug match)');
+                                              foundInAssets = true;
+                                            } 
+                                            // Method 2: Title-derived slug match
+                                            else if (_slugifyTitle(item.title) == storySlug && item.language == language) {
+                                              print('📚 ✓ MATCH! (title-derived slug match)');
+                                              foundInAssets = true;
+                                            }
+                                            // Method 3: Title contains match
+                                            else if (item.title.toLowerCase().contains(story.title.toLowerCase()) && 
+                                                   item.language == language) {
+                                              print('📚 ✓ MATCH! (title contains match)');
+                                              foundInAssets = true;
+                                            }
+                                            
+                                            if (foundInAssets) {
+                                              try {
+                                                print('📚 Loading content from: ${item.page1Path}');
+                                                text = await StoryAssetService.loadPageContent(
+                                                  slug: item.slug,
+                                                  language: language,
+                                                );
+                                                print('📚 ✅ Content loaded, length: ${text.length} chars');
+                                                contentLoaded = true;
+                                                break;
+                                              } catch (loadError) {
+                                                print('📚 ❌ Failed to load content: $loadError');
+                                                foundInAssets = false; // Reset to try other matches
+                                              }
+                                            }
+                                          }
+                                          
+                                          // Fallbacks if not found in assets
+                                          if (!foundInAssets) {
+                                            print('📚 ❌ Story not found in assets, using fallbacks');
+                                            
+                                            // FALLBACK 1: StoryContent hardcoded mapping
+                                            if (StoryContent.hasContent(story.id)) {
+                                              print('📚 FALLBACK 1: Using legacy content mapping');
+                                              final pages = StoryContent.getPagesById(story.id);
+                                              if (pages != null && pages.isNotEmpty) {
+                                                text = pages.first;
+                                                print('📚 ✅ Using legacy page content: ${text.length} chars');
+                                                contentLoaded = true;
+                                              } else {
+                                                final content = StoryContent.getContentById(story.id);
+                                                if (content != null) {
+                                                  text = content;
+                                                  print('📚 ✅ Using legacy story content: ${text.length} chars');
+                                                  contentLoaded = true;
+                                                }
+                                              }
+                                            }
+                                            
+                                            // FALLBACK 2: Synopsis
+                                            if (!contentLoaded && story.synopsis?.isNotEmpty == true) {
+                                              print('📚 FALLBACK 2: Using synopsis');
+                                              text = story.synopsis!;
+                                              print('📚 ✅ Using synopsis: ${text.length} chars');
+                                              contentLoaded = true;
+                                            }
+                                          }
+                                        }
+                                      } catch (e) {
+                                        // If any errors in the overall process
+                                        print('❌ Error in story loading process: $e');
+                                        if (!contentLoaded && story.synopsis?.isNotEmpty == true) {
+                                          text = story.synopsis!;
+                                          print('📚 Emergency fallback: Using synopsis: ${text.length} chars');
+                                        }
+                                      }
+                                      
+                                      // Final text check
+                                      if (text == 'Let\'s read ${story.title}.') {
+                                        print('❗ WARNING: Using default text - no content was loaded');
                                       }
                                       
                                       // Use reading page for all stories
@@ -250,6 +403,9 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       ),
     );
   }
+
+  /// Converts a story title to a slug format for asset lookup
+
 
   Widget _roundIconButton(IconData icon, {required VoidCallback onTap}) {
     return SizedBox(
