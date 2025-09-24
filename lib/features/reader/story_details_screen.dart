@@ -7,7 +7,7 @@ import 'package:storytots/data/repositories/library_repository.dart';
 import 'package:storytots/data/story_content.dart';
 import 'package:storytots/data/story_asset_service.dart';
 import 'package:storytots/data/stories_index.dart';
-import 'reading_page_v2.dart';
+import 'reading_page_v3.dart';
 import 'speech/speech_service_factory.dart';
 
 class StoryDetailsScreen extends StatefulWidget {
@@ -331,7 +331,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                       await Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (_) => ReadingPageV2(
+                                          builder: (_) => ReadingPageV3(
                                             pageText: text,
                                             storyId: story.id,
                                             storyTitle: story.title,

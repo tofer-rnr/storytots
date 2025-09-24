@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants.dart';
 import '../../../data/repositories/stories_repository.dart';
 import '../../reader/story_details_screen.dart';
-import '../../reader/reading_page_v2.dart';
+import '../../reader/reading_page_v3.dart';
 import '../../reader/speech/speech_service_factory.dart';
 import '../widgets/story_card.dart';
 
@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ReadingPageV2(
+        builder: (_) => ReadingPageV3(
           pageText: sample,
           storyId: 'demo',
           storyTitle: topic ?? 'Demo Story',
