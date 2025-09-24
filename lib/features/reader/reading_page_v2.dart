@@ -18,7 +18,8 @@ class ReadingPageV2 extends StatefulWidget {
     super.key,
     required this.pageText,
     this.minAccuracy = 0.85,
-    this.speechServiceType = SpeechServiceType.deviceSTT, // Always use device STT
+    this.speechServiceType =
+        SpeechServiceType.deviceSTT, // Always use device STT
     // Optional: provide to enable favorite toggle and library sync
     this.storyId,
     this.storyTitle,
@@ -144,7 +145,9 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
         final res = await Permission.microphone.request();
         if (!res.isGranted) {
           setState(() => _serviceReady = false);
-          _showServiceNotReadyDialog('Microphone permission is required for speech recognition.');
+          _showServiceNotReadyDialog(
+            'Microphone permission is required for speech recognition.',
+          );
           return;
         }
       }
@@ -162,7 +165,9 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
       final speechOk = await Permission.speech.isGranted;
       if (!micOk || !speechOk) {
         setState(() => _serviceReady = false);
-        _showServiceNotReadyDialog('Please allow Microphone and Speech Recognition in Settings to enable reading.');
+        _showServiceNotReadyDialog(
+          'Please allow Microphone and Speech Recognition in Settings to enable reading.',
+        );
         return;
       }
     }
@@ -171,8 +176,11 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
     setState(() => _serviceReady = ok);
 
     if (!ok && mounted) {
-      final serviceName = SpeechServiceFactory.getServiceName(widget.speechServiceType);
-      final errorMsg = widget.speechServiceType == SpeechServiceType.openaiWhisper
+      final serviceName = SpeechServiceFactory.getServiceName(
+        widget.speechServiceType,
+      );
+      final errorMsg =
+          widget.speechServiceType == SpeechServiceType.openaiWhisper
           ? '$serviceName is not available. Please check your network connection and configuration.'
           : '$serviceName is not available. Please check your device settings.';
       _showServiceNotReadyDialog(errorMsg);
@@ -657,7 +665,10 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
                     if (_listening) ...[
                       const SizedBox(width: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.red.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
@@ -667,7 +678,13 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
                           children: const [
                             Icon(Icons.mic, size: 14, color: Colors.redAccent),
                             SizedBox(width: 4),
-                            Text('Listening…', style: TextStyle(fontSize: 12, color: Colors.redAccent)),
+                            Text(
+                              'Listening…',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.redAccent,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -730,9 +747,9 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Accuracy information at bottom
               Container(
                 padding: const EdgeInsets.all(16),
@@ -772,7 +789,8 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      if ((_status[_cursor] == WordStatus.incorrect) && _pronounceHint.isNotEmpty)
+                      if ((_status[_cursor] == WordStatus.incorrect) &&
+                          _pronounceHint.isNotEmpty)
                         Text(
                           'Say it like: $_pronounceHint',
                           style: const TextStyle(
@@ -799,7 +817,11 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: const [
-                              BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 8,
+                                offset: Offset(0, 4),
+                              ),
                             ],
                           ),
                           child: Column(
@@ -807,23 +829,33 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
                             children: [
                               Text(
                                 'Try: ${_wrongWord!}',
-                                style: const TextStyle(fontWeight: FontWeight.w800),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                               if (_wrongHeard != null) ...[
                                 const SizedBox(height: 4),
-                                Text('You said: ${_wrongHeard!}', style: const TextStyle(color: Colors.black54)),
+                                Text(
+                                  'You said: ${_wrongHeard!}',
+                                  style: const TextStyle(color: Colors.black54),
+                                ),
                               ],
                               const SizedBox(height: 4),
                               Text(
                                 _wrongHint ?? '',
-                                style: const TextStyle(color: Colors.redAccent, fontStyle: FontStyle.italic),
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontStyle: FontStyle.italic,
+                                ),
                               ),
                               const SizedBox(height: 6),
                               FilledButton.icon(
                                 style: FilledButton.styleFrom(
                                   backgroundColor: const Color(brandPurple),
                                   foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                 ),
                                 onPressed: () => _speakWord(_wrongWord!),
                                 icon: const Icon(Icons.volume_up),
@@ -832,7 +864,7 @@ class _ReadingPageV2State extends State<ReadingPageV2> {
                             ],
                           ),
                         ),
-                      )
+                      ),
                     ],
                   ],
                 ),

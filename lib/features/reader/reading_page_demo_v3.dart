@@ -20,9 +20,12 @@ class ReadingPageDemoV3 extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // Background
-          Image.asset('assets/images/storytots_background.png', fit: BoxFit.cover),
+          Image.asset(
+            'assets/images/storytots_background.png',
+            fit: BoxFit.cover,
+          ),
           Container(color: Colors.white.withOpacity(0.95)),
-          
+
           // Content
           SafeArea(
             child: Padding(
@@ -39,9 +42,9 @@ class ReadingPageDemoV3 extends StatelessWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Features list
                   Card(
                     child: Padding(
@@ -59,60 +62,75 @@ class ReadingPageDemoV3 extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _buildFeature('🎯 Sentence-level speech recognition'),
-                          _buildFeature('📝 Natural speaking patterns supported'),
-                          _buildFeature('🔄 Smart word matching with similarity scoring'),
+                          _buildFeature(
+                            '📝 Natural speaking patterns supported',
+                          ),
+                          _buildFeature(
+                            '🔄 Smart word matching with similarity scoring',
+                          ),
                           _buildFeature('🗣️ Better pronunciation feedback'),
-                          _buildFeature('⏱️ 3-second timeout for sentence completion'),
-                          _buildFeature('✅ Word-level accuracy within sentences'),
+                          _buildFeature(
+                            '⏱️ 3-second timeout for sentence completion',
+                          ),
+                          _buildFeature(
+                            '✅ Word-level accuracy within sentences',
+                          ),
                         ],
                       ),
                     ),
                   ),
-                  
+
                   const Spacer(),
-                  
+
                   // Demo stories
                   Text(
                     'Try These Demo Stories:',
                     style: Theme.of(context).textTheme.titleLarge,
                     textAlign: TextAlign.center,
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Short story button
                   FilledButton(
-                    onPressed: () => _openDemo(context, _shortStory, 'Short Story'),
+                    onPressed: () =>
+                        _openDemo(context, _shortStory, 'Short Story'),
                     child: const Padding(
                       padding: EdgeInsets.all(16),
                       child: Text('Short Story (2 sentences)'),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Medium story button
                   FilledButton(
-                    onPressed: () => _openDemo(context, _mediumStory, 'Medium Story'),
-                    style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+                    onPressed: () =>
+                        _openDemo(context, _mediumStory, 'Medium Story'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                    ),
                     child: const Padding(
                       padding: EdgeInsets.all(16),
                       child: Text('Medium Story (4 sentences)'),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Complex story button
                   FilledButton(
-                    onPressed: () => _openDemo(context, _complexStory, 'Complex Story'),
-                    style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                    onPressed: () =>
+                        _openDemo(context, _complexStory, 'Complex Story'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.green,
+                    ),
                     child: const Padding(
                       padding: EdgeInsets.all(16),
                       child: Text('Complex Story (6 sentences)'),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 20),
                 ],
               ),
@@ -122,7 +140,7 @@ class ReadingPageDemoV3 extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildFeature(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),

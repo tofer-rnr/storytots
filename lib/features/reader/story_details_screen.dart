@@ -33,19 +33,21 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   String _slugifyTitle(String title) {
     // First handle special cases with direct lookup
     final lowerTitle = title.toLowerCase();
-    
+
     // Handle special cases - story titles
     if (lowerTitle.contains('monkey') && lowerTitle.contains('turtle')) {
       return 'the-monkey-and-the-turtle';
     } else if (lowerTitle.contains('unggoy') && lowerTitle.contains('pagong')) {
-      return 'the-monkey-and-the-turtle';  // Tagalog version
+      return 'the-monkey-and-the-turtle'; // Tagalog version
     } else if (lowerTitle.contains('alamat') && lowerTitle.contains('saging')) {
       return 'alamat-ng-saging';
     } else if (lowerTitle.contains('legend') && lowerTitle.contains('banana')) {
-      return 'alamat-ng-saging';  // English version
-    } else if (lowerTitle.contains('alamat') && lowerTitle.contains('sampaguita')) {
+      return 'alamat-ng-saging'; // English version
+    } else if (lowerTitle.contains('alamat') &&
+        lowerTitle.contains('sampaguita')) {
       return 'alamat-ng-sampaguita';
-    } else if (lowerTitle.contains('legend') && lowerTitle.contains('sampaguita')) {
+    } else if (lowerTitle.contains('legend') &&
+        lowerTitle.contains('sampaguita')) {
       return 'alamat-ng-sampaguita'; // English version
     } else if (lowerTitle.contains('sky') && lowerTitle.contains('high')) {
       return 'why-the-sky-is-high';
@@ -54,27 +56,29 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     } else if (lowerTitle.contains('bitter') && lowerTitle.contains('gourd')) {
       return 'the-legend-of-the-bitter-gourd';
     } else if (lowerTitle.contains('ampalaya')) {
-      return 'the-legend-of-the-bitter-gourd';  // Tagalog version
+      return 'the-legend-of-the-bitter-gourd'; // Tagalog version
     } else if (lowerTitle.contains('rainbow')) {
       return 'the-legend-of-the-rainbow';
     } else if ((lowerTitle.contains('salty') && lowerTitle.contains('sea')) ||
-              (lowerTitle.contains('ocean') && lowerTitle.contains('salt'))) {
+        (lowerTitle.contains('ocean') && lowerTitle.contains('salt'))) {
       return 'why-the-ocean-is-salty';
     } else if (lowerTitle.contains('juan') && lowerTitle.contains('tamad')) {
       return 'stories-of-juan-tamad';
     } else if (lowerTitle.contains('lion') && lowerTitle.contains('mouse')) {
       return 'the-lion-and-the-mouse';
-    } else if (lowerTitle.contains('ant') && lowerTitle.contains('grasshopper')) {
+    } else if (lowerTitle.contains('ant') &&
+        lowerTitle.contains('grasshopper')) {
       return 'the-ant-and-the-grasshopper';
-    } else if (lowerTitle.contains('pineapple') || lowerTitle.contains('piña')) {
+    } else if (lowerTitle.contains('pineapple') ||
+        lowerTitle.contains('piña')) {
       return 'legend-of-the-pineapple';
     }
-    
+
     // If no special case matches, normalize the string
     final normalized = lowerTitle
-      .replaceAll(RegExp(r'[^\w\s-]'), '') // Remove special chars
-      .replaceAll(RegExp(r'\s+'), '-');    // Replace spaces with hyphens
-    
+        .replaceAll(RegExp(r'[^\w\s-]'), '') // Remove special chars
+        .replaceAll(RegExp(r'\s+'), '-'); // Replace spaces with hyphens
+
     print('📚 Title: "$title" => Slug: "$normalized" (no special case match)');
     return normalized;
   }
@@ -104,9 +108,13 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
             actions: [
               if (!loading && story != null)
                 IconButton(
-                  tooltip: (_isFavorite ?? false) ? 'Unfavorite' : 'Add to favorites',
+                  tooltip: (_isFavorite ?? false)
+                      ? 'Unfavorite'
+                      : 'Add to favorites',
                   icon: Icon(
-                    (_isFavorite ?? false) ? Icons.favorite : Icons.favorite_border,
+                    (_isFavorite ?? false)
+                        ? Icons.favorite
+                        : Icons.favorite_border,
                     color: Colors.white,
                   ),
                   onPressed: () async {
@@ -115,7 +123,8 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                       await libraryRepo.ensureRow(
                         storyId: story.id,
                         title: story.title,
-                        coverUrl: story.coverUrl ?? coverAssetForTitle(story.title),
+                        coverUrl:
+                            story.coverUrl ?? coverAssetForTitle(story.title),
                       );
                     } catch (_) {}
 
@@ -126,7 +135,11 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(newVal ? 'Added to favorites' : 'Removed from favorites'),
+                            content: Text(
+                              newVal
+                                  ? 'Added to favorites'
+                                  : 'Removed from favorites',
+                            ),
                           ),
                         );
                       }
@@ -134,7 +147,9 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                       setState(() => _isFavorite = !newVal);
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Failed to update favorite')),
+                          const SnackBar(
+                            content: Text('Failed to update favorite'),
+                          ),
                         );
                       }
                     }
@@ -145,7 +160,10 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
           body: Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset('assets/images/storytots_background.png', fit: BoxFit.cover),
+              Image.asset(
+                'assets/images/storytots_background.png',
+                fit: BoxFit.cover,
+              ),
               Container(color: Colors.white.withOpacity(0.94)),
               if (loading || story == null)
                 const Center(child: CircularProgressIndicator())
@@ -157,10 +175,16 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          _CoverBox(title: story.title, coverUrl: story.coverUrl),
+                          _CoverBox(
+                            title: story.title,
+                            coverUrl: story.coverUrl,
+                          ),
                           const SizedBox(height: 16),
                           Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 10,
+                              horizontal: 16,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(brandPurple),
                               borderRadius: BorderRadius.circular(14),
@@ -168,7 +192,10 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                             child: Text(
                               story.title,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -185,9 +212,14 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                     await libraryRepo.ensureRow(
                                       storyId: story.id,
                                       title: story.title,
-                                      coverUrl: story.coverUrl ?? coverAssetForTitle(story.title),
+                                      coverUrl:
+                                          story.coverUrl ??
+                                          coverAssetForTitle(story.title),
                                     );
-                                    await libraryRepo.toggleFavorite(story.id, favNow);
+                                    await libraryRepo.toggleFavorite(
+                                      story.id,
+                                      favNow,
+                                    );
                                   } catch (_) {
                                     setState(() => _isFavorite = !favNow);
                                   }
@@ -201,132 +233,216 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                     style: FilledButton.styleFrom(
                                       backgroundColor: const Color(brandPurple),
                                       foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
                                     ),
                                     onPressed: () async {
                                       try {
                                         await libraryRepo.recordOpen(
                                           storyId: story.id,
                                           title: story.title,
-                                          coverUrl: (story.coverUrl?.isNotEmpty == true)
+                                          coverUrl:
+                                              (story.coverUrl?.isNotEmpty ==
+                                                  true)
                                               ? story.coverUrl
                                               : coverAssetForTitle(story.title),
                                         );
                                       } catch (_) {}
 
                                       // Try to load story content from assets
-                                      String text = 'Let\'s read ${story.title}.';  // Default text
+                                      String text =
+                                          'Let\'s read ${story.title}.'; // Default text
                                       bool contentLoaded = false;
-                                      
+
                                       try {
                                         // First, determine if we have this story in assets
-                                        final storySlug = _slugifyTitle(story.title);
+                                        final storySlug = _slugifyTitle(
+                                          story.title,
+                                        );
                                         // Language is either 'tl' or defaults to 'en'
-                                        final language = story.language.toLowerCase() == 'tl' ? 'tl' : 'en';
-                                        
-                                        print('📚 --------- STORY LOADING ----------');
-                                        print('📚 Story title: "${story.title}" (ID: ${story.id})');
-                                        print('📚 Story slug: "$storySlug", language: "$language"');
-                                        print('📚 ---------------------------------');
-                                        
+                                        final language =
+                                            story.language.toLowerCase() == 'tl'
+                                            ? 'tl'
+                                            : 'en';
+
+                                        print(
+                                          '📚 --------- STORY LOADING ----------',
+                                        );
+                                        print(
+                                          '📚 Story title: "${story.title}" (ID: ${story.id})',
+                                        );
+                                        print(
+                                          '📚 Story slug: "$storySlug", language: "$language"',
+                                        );
+                                        print(
+                                          '📚 ---------------------------------',
+                                        );
+
                                         // DIRECT APPROACH: Try loading directly by slug
                                         try {
-                                          print('📚 ATTEMPT 1: Direct loading with slug');
-                                          text = await StoryAssetService.loadPageContent(
-                                            slug: storySlug,
-                                            language: language,
+                                          print(
+                                            '📚 ATTEMPT 1: Direct loading with slug',
                                           );
-                                          print('📚 ✅ SUCCESS: Content loaded directly, length: ${text.length} chars');
+                                          text =
+                                              await StoryAssetService.loadPageContent(
+                                                slug: storySlug,
+                                                language: language,
+                                              );
+                                          print(
+                                            '📚 ✅ SUCCESS: Content loaded directly, length: ${text.length} chars',
+                                          );
                                           contentLoaded = true;
                                         } catch (directError) {
-                                          print('📚 ❌ FAILED direct loading: $directError');
-                                          
+                                          print(
+                                            '📚 ❌ FAILED direct loading: $directError',
+                                          );
+
                                           // SEARCH APPROACH: Search through index
-                                          print('📚 ATTEMPT 2: Searching index for matching story');
+                                          print(
+                                            '📚 ATTEMPT 2: Searching index for matching story',
+                                          );
                                           bool foundInAssets = false;
-                                          
+
                                           for (var item in StoriesIndex.items) {
-                                            print('📚 Checking index: "${item.title}" (${item.slug}) [${item.language}]');
-                                            
+                                            print(
+                                              '📚 Checking index: "${item.title}" (${item.slug}) [${item.language}]',
+                                            );
+
                                             // Method 1: Direct slug match
-                                            if (item.slug == storySlug && item.language == language) {
-                                              print('📚 ✓ MATCH! (direct slug match)');
+                                            if (item.slug == storySlug &&
+                                                item.language == language) {
+                                              print(
+                                                '📚 ✓ MATCH! (direct slug match)',
+                                              );
                                               foundInAssets = true;
-                                            } 
+                                            }
                                             // Method 2: Title-derived slug match
-                                            else if (_slugifyTitle(item.title) == storySlug && item.language == language) {
-                                              print('📚 ✓ MATCH! (title-derived slug match)');
+                                            else if (_slugifyTitle(
+                                                      item.title,
+                                                    ) ==
+                                                    storySlug &&
+                                                item.language == language) {
+                                              print(
+                                                '📚 ✓ MATCH! (title-derived slug match)',
+                                              );
                                               foundInAssets = true;
                                             }
                                             // Method 3: Title contains match
-                                            else if (item.title.toLowerCase().contains(story.title.toLowerCase()) && 
-                                                   item.language == language) {
-                                              print('📚 ✓ MATCH! (title contains match)');
+                                            else if (item.title
+                                                    .toLowerCase()
+                                                    .contains(
+                                                      story.title.toLowerCase(),
+                                                    ) &&
+                                                item.language == language) {
+                                              print(
+                                                '📚 ✓ MATCH! (title contains match)',
+                                              );
                                               foundInAssets = true;
                                             }
-                                            
+
                                             if (foundInAssets) {
                                               try {
-                                                print('📚 Loading content from: ${item.page1Path}');
-                                                text = await StoryAssetService.loadPageContent(
-                                                  slug: item.slug,
-                                                  language: language,
+                                                print(
+                                                  '📚 Loading content from: ${item.page1Path}',
                                                 );
-                                                print('📚 ✅ Content loaded, length: ${text.length} chars');
+                                                text =
+                                                    await StoryAssetService.loadPageContent(
+                                                      slug: item.slug,
+                                                      language: language,
+                                                    );
+                                                print(
+                                                  '📚 ✅ Content loaded, length: ${text.length} chars',
+                                                );
                                                 contentLoaded = true;
                                                 break;
                                               } catch (loadError) {
-                                                print('📚 ❌ Failed to load content: $loadError');
-                                                foundInAssets = false; // Reset to try other matches
+                                                print(
+                                                  '📚 ❌ Failed to load content: $loadError',
+                                                );
+                                                foundInAssets =
+                                                    false; // Reset to try other matches
                                               }
                                             }
                                           }
-                                          
+
                                           // Fallbacks if not found in assets
                                           if (!foundInAssets) {
-                                            print('📚 ❌ Story not found in assets, using fallbacks');
-                                            
+                                            print(
+                                              '📚 ❌ Story not found in assets, using fallbacks',
+                                            );
+
                                             // FALLBACK 1: StoryContent hardcoded mapping
-                                            if (StoryContent.hasContent(story.id)) {
-                                              print('📚 FALLBACK 1: Using legacy content mapping');
-                                              final pages = StoryContent.getPagesById(story.id);
-                                              if (pages != null && pages.isNotEmpty) {
+                                            if (StoryContent.hasContent(
+                                              story.id,
+                                            )) {
+                                              print(
+                                                '📚 FALLBACK 1: Using legacy content mapping',
+                                              );
+                                              final pages =
+                                                  StoryContent.getPagesById(
+                                                    story.id,
+                                                  );
+                                              if (pages != null &&
+                                                  pages.isNotEmpty) {
                                                 text = pages.first;
-                                                print('📚 ✅ Using legacy page content: ${text.length} chars');
+                                                print(
+                                                  '📚 ✅ Using legacy page content: ${text.length} chars',
+                                                );
                                                 contentLoaded = true;
                                               } else {
-                                                final content = StoryContent.getContentById(story.id);
+                                                final content =
+                                                    StoryContent.getContentById(
+                                                      story.id,
+                                                    );
                                                 if (content != null) {
                                                   text = content;
-                                                  print('📚 ✅ Using legacy story content: ${text.length} chars');
+                                                  print(
+                                                    '📚 ✅ Using legacy story content: ${text.length} chars',
+                                                  );
                                                   contentLoaded = true;
                                                 }
                                               }
                                             }
-                                            
+
                                             // FALLBACK 2: Synopsis
-                                            if (!contentLoaded && story.synopsis?.isNotEmpty == true) {
-                                              print('📚 FALLBACK 2: Using synopsis');
+                                            if (!contentLoaded &&
+                                                story.synopsis?.isNotEmpty ==
+                                                    true) {
+                                              print(
+                                                '📚 FALLBACK 2: Using synopsis',
+                                              );
                                               text = story.synopsis!;
-                                              print('📚 ✅ Using synopsis: ${text.length} chars');
+                                              print(
+                                                '📚 ✅ Using synopsis: ${text.length} chars',
+                                              );
                                               contentLoaded = true;
                                             }
                                           }
                                         }
                                       } catch (e) {
                                         // If any errors in the overall process
-                                        print('❌ Error in story loading process: $e');
-                                        if (!contentLoaded && story.synopsis?.isNotEmpty == true) {
+                                        print(
+                                          '❌ Error in story loading process: $e',
+                                        );
+                                        if (!contentLoaded &&
+                                            story.synopsis?.isNotEmpty ==
+                                                true) {
                                           text = story.synopsis!;
-                                          print('📚 Emergency fallback: Using synopsis: ${text.length} chars');
+                                          print(
+                                            '📚 Emergency fallback: Using synopsis: ${text.length} chars',
+                                          );
                                         }
                                       }
-                                      
+
                                       // Final text check
-                                      if (text == 'Let\'s read ${story.title}.') {
-                                        print('❗ WARNING: Using default text - no content was loaded');
+                                      if (text ==
+                                          'Let\'s read ${story.title}.') {
+                                        print(
+                                          '❗ WARNING: Using default text - no content was loaded',
+                                        );
                                       }
-                                      
+
                                       // Use reading page for all stories
                                       await Navigator.push(
                                         context,
@@ -335,8 +451,11 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                             pageText: text,
                                             storyId: story.id,
                                             storyTitle: story.title,
-                                            coverUrl: story.coverUrl ?? coverAssetForTitle(story.title),
-                                            speechServiceType: SpeechServiceType.deviceSTT,
+                                            coverUrl:
+                                                story.coverUrl ??
+                                                coverAssetForTitle(story.title),
+                                            speechServiceType:
+                                                SpeechServiceType.deviceSTT,
                                           ),
                                         ),
                                       );
@@ -356,14 +475,23 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 6))],
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 6),
+                                ),
+                              ],
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
                                   'Synopsis of the story:',
-                                  style: TextStyle(letterSpacing: 2.0, fontWeight: FontWeight.w800),
+                                  style: TextStyle(
+                                    letterSpacing: 2.0,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(story.synopsis ?? '—'),
@@ -396,7 +524,10 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         text: TextSpan(
           style: const TextStyle(color: Colors.black87, height: 1.35),
           children: [
-            TextSpan(text: '• $k ', style: const TextStyle(fontWeight: FontWeight.w800)),
+            TextSpan(
+              text: '• $k ',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
             TextSpan(text: v?.isNotEmpty == true ? v! : '—'),
           ],
         ),
@@ -405,7 +536,6 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   }
 
   /// Converts a story title to a slug format for asset lookup
-
 
   Widget _roundIconButton(IconData icon, {required VoidCallback onTap}) {
     return SizedBox(
@@ -442,7 +572,9 @@ class _CoverBox extends StatelessWidget {
     } else if (localAsset != null && localAsset.isNotEmpty) {
       imageProvider = AssetImage(localAsset);
     } else {
-      imageProvider = const AssetImage('assets/images/book_cover_placeholder.png');
+      imageProvider = const AssetImage(
+        'assets/images/book_cover_placeholder.png',
+      );
     }
 
     return Container(
@@ -452,7 +584,11 @@ class _CoverBox extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, 6)),
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
         ],
         image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
       ),

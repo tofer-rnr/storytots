@@ -67,17 +67,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static String _avatarAssetFromKey(String? key) {
     switch (key) {
-      case 'boy': return 'assets/images/boy.png';
-      case 'girl': return 'assets/images/girl.png';
-      case 'dog': return 'assets/images/dog.png';
-      case 'cat': return 'assets/images/cat.png';
-      case 'hamster': return 'assets/images/hamster.png';
-      case 'chimpmuck': return 'assets/images/chimpmuck.png';
-      case 'pup': return 'assets/images/dog.png';
-      case 'cub': return 'assets/images/hamster.png';
-      case 'owl': return 'assets/images/cat.png';
-      case 'bunny': return 'assets/images/hamster.png';
-      default: return 'assets/images/avatar_placeholder.png';
+      case 'boy':
+        return 'assets/images/boy.png';
+      case 'girl':
+        return 'assets/images/girl.png';
+      case 'dog':
+        return 'assets/images/dog.png';
+      case 'cat':
+        return 'assets/images/cat.png';
+      case 'hamster':
+        return 'assets/images/hamster.png';
+      case 'chimpmuck':
+        return 'assets/images/chimpmuck.png';
+      case 'pup':
+        return 'assets/images/dog.png';
+      case 'cub':
+        return 'assets/images/hamster.png';
+      case 'owl':
+        return 'assets/images/cat.png';
+      case 'bunny':
+        return 'assets/images/hamster.png';
+      default:
+        return 'assets/images/avatar_placeholder.png';
     }
   }
 
@@ -108,13 +119,15 @@ class _HomeScreenState extends State<HomeScreen> {
         final data = snap.data;
         final interests =
             (data?['interests'] as List<String>?) ?? const <String>[];
-        final avatarPath = (data?['avatarPath'] as String?) ??
+        final avatarPath =
+            (data?['avatarPath'] as String?) ??
             'assets/images/avatar_placeholder.png';
 
         return FutureBuilder<Map<String, List<Story>>>(
           future: loadingProfile ? null : _loadSections(interests),
           builder: (context, secSnap) {
-            final loadingSections = loadingProfile ||
+            final loadingSections =
+                loadingProfile ||
                 (secSnap.connectionState != ConnectionState.done &&
                     interests.isNotEmpty);
             final sections = secSnap.data ?? const <String, List<Story>>{};
@@ -138,16 +151,17 @@ class _HomeScreenState extends State<HomeScreen> {
               body: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset('assets/images/storytots_background.png',
-                      fit: BoxFit.cover),
+                  Image.asset(
+                    'assets/images/storytots_background.png',
+                    fit: BoxFit.cover,
+                  ),
                   Container(color: Colors.white.withOpacity(0.92)),
 
                   if (loadingSections)
                     const Center(child: CircularProgressIndicator())
                   else
                     ListView(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                       children: [
                         // Search
                         Container(
@@ -156,13 +170,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: const [
                               BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 10,
-                                  offset: Offset(0, 4)),
+                                color: Colors.black12,
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
                             ],
                           ),
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Row(
                             children: const [
                               Icon(Icons.search_rounded),
@@ -191,13 +205,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: const [
                                 BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 10,
-                                    offset: Offset(0, 6))
+                                  color: Colors.black12,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 6),
+                                ),
                               ],
                               image: const DecorationImage(
                                 image: AssetImage(
-                                    'assets/images/covers/header_banner.png'),
+                                  'assets/images/covers/header_banner.png',
+                                ),
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -215,7 +231,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             if (crSnap.connectionState !=
                                 ConnectionState.done) {
                               return const Center(
-                                  child: CircularProgressIndicator());
+                                child: CircularProgressIndicator(),
+                              );
                             }
                             final stories = crSnap.data ?? [];
 
@@ -257,12 +274,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                     story: story,
                                     onTap: () {
                                       // Optional: mark progress immediately
-                                      _storiesRepo.touchReadingHistory(story.id);
+                                      _storiesRepo.touchReadingHistory(
+                                        story.id,
+                                      );
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => StoryDetailsScreen(
-                                              storyId: story.id),
+                                            storyId: story.id,
+                                          ),
                                         ),
                                       );
                                     },
@@ -283,32 +303,35 @@ class _HomeScreenState extends State<HomeScreen> {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: const [
                                 BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 10,
-                                    offset: Offset(0, 4)),
+                                  color: Colors.black12,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                ),
                               ],
                             ),
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Choose Topics of Interest',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w700)),
+                                const Text(
+                                  'Choose Topics of Interest',
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
                                 const SizedBox(height: 8),
                                 const Text(
-                                    'Personalize StoryTots by selecting topics your child loves.'),
+                                  'Personalize StoryTots by selecting topics your child loves.',
+                                ),
                                 const SizedBox(height: 12),
                                 FilledButton(
                                   onPressed: () => Navigator.pushNamed(
-                                      context, '/onboarding'),
+                                    context,
+                                    '/onboarding',
+                                  ),
                                   style: FilledButton.styleFrom(
-                                    backgroundColor:
-                                        const Color(brandPurple),
+                                    backgroundColor: const Color(brandPurple),
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
                                   child: const Text('Pick topics'),
                                 ),
@@ -340,8 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _sectionTitle(String text,
-      {IconData? trailing, VoidCallback? onTap}) {
+  Widget _sectionTitle(String text, {IconData? trailing, VoidCallback? onTap}) {
     return Row(
       children: [
         Expanded(
@@ -369,11 +391,16 @@ class _HomeScreenState extends State<HomeScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
           ],
           image: DecorationImage(
             image: AssetImage(
-                coverAsset ?? 'assets/images/book_cover_placeholder.png'),
+              coverAsset ?? 'assets/images/book_cover_placeholder.png',
+            ),
             fit: BoxFit.cover,
           ),
         ),
@@ -410,8 +437,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    StoryDetailsScreen(storyId: stories[i].id),
+                builder: (_) => StoryDetailsScreen(storyId: stories[i].id),
               ),
             );
           },
@@ -426,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
         ],
       ),
     );

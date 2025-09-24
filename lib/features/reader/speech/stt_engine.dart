@@ -78,7 +78,9 @@ class SpeechToTextEngine implements SpeechEngine {
         // Compute deltas vs the last delivered tokens
         final currTokens = _normalizeAndTokenize(transcript);
         int i = 0;
-        final limit = _prevTokens.length < currTokens.length ? _prevTokens.length : currTokens.length;
+        final limit = _prevTokens.length < currTokens.length
+            ? _prevTokens.length
+            : currTokens.length;
         while (i < limit && _prevTokens[i] == currTokens[i]) {
           i++;
         }
@@ -86,7 +88,9 @@ class SpeechToTextEngine implements SpeechEngine {
         _prevTokens = currTokens;
 
         if (delta.isEmpty) return;
-        _log('onResult: +${delta.length} new word(s) | total=${currTokens.length}');
+        _log(
+          'onResult: +${delta.length} new word(s) | total=${currTokens.length}',
+        );
         _onWords?.call(delta);
       },
       listenFor: const Duration(minutes: 10),

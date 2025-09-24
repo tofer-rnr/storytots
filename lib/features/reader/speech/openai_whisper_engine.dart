@@ -6,11 +6,15 @@ import 'engine.dart';
 
 class OpenAIWhisperEngine implements SpeechEngine {
   @override
-  bool get isListening => throw UnsupportedError('OpenAI Whisper is not available. Using device STT instead.');
+  bool get isListening => throw UnsupportedError(
+    'OpenAI Whisper is not available. Using device STT instead.',
+  );
 
   @override
   Future<bool> init() async {
-    throw UnsupportedError('OpenAI Whisper is not available. Using device STT instead.');
+    throw UnsupportedError(
+      'OpenAI Whisper is not available. Using device STT instead.',
+    );
   }
 
   @override
@@ -18,11 +22,15 @@ class OpenAIWhisperEngine implements SpeechEngine {
     required void Function(List<String>) onWords,
     String? localeId,
   }) async {
-    throw UnsupportedError('OpenAI Whisper is not available. Using device STT instead.');
+    throw UnsupportedError(
+      'OpenAI Whisper is not available. Using device STT instead.',
+    );
   }
 
   @override
   Future<void> stop() async {
-    throw UnsupportedError('OpenAI Whisper is not available. Using device STT instead.');
+    throw UnsupportedError(
+      'OpenAI Whisper is not available. Using device STT instead.',
+    );
   }
 }
