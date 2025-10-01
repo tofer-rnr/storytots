@@ -12,6 +12,7 @@ import 'karaoke_text.dart';
 import 'speech/engine.dart';
 import 'speech/speech_service_factory.dart';
 import '../../data/repositories/library_repository.dart';
+import '../../data/repositories/progress_repository.dart';
 
 class ReadingPageV3 extends StatefulWidget {
   const ReadingPageV3({
@@ -23,9 +24,14 @@ class ReadingPageV3 extends StatefulWidget {
     this.storyId,
     this.storyTitle,
     this.coverUrl,
+    // Optional localized texts (provide both to enable the toggle)
+    this.pageTextEn,
+    this.pageTextTl,
   });
 
   final String pageText;
+  final String? pageTextEn;
+  final String? pageTextTl;
   final double minAccuracy;
   final SpeechServiceType speechServiceType;
   final String? storyId;
@@ -70,6 +76,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
 
   // UI state
   final _libraryRepo = LibraryRepository();
+  final _progressRepo = ProgressRepository();
   bool? _isFavorite;
   Timer? _statusTimer;
 
@@ -77,15 +84,31 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
   Map<String, String> _mispronunciationFeedback = {};
   List<String> _currentSentenceMistakes = [];
 
+  // Track selected language for toggle; values: 'auto' (default), 'en', 'tl'
+  String _selectedLang = 'auto';
+
   @override
   void initState() {
     super.initState();
     _speechService = SpeechServiceFactory.create(widget.speechServiceType);
-    _prepareSentences(widget.pageText);
+
+    // Choose initial text: prefer explicit localized fields when available
+    final initialText =
+        widget.pageTextEn ?? widget.pageTextTl ?? widget.pageText;
+    if (widget.pageTextEn != null && widget.pageTextTl != null) {
+      // When both provided, default to English but mark toggle available
+      _selectedLang = widget.pageTextEn == initialText ? 'en' : 'tl';
+    }
+
+    _prepareSentences(initialText);
     _initializeWordStatus();
     _initTts();
     _initSpeechService();
     _loadFavorite();
+
+    // Load saved progress (if any) and attempt to flush pending syncs
+    _loadProgress();
+    _progressRepo.flushPendingProgress();
 
     _statusTimer = Timer.periodic(const Duration(milliseconds: 600), (_) {
       final ls = _speechService.isListening;
@@ -101,6 +124,10 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     _sentenceTimeout?.cancel();
     _stopListen();
     _tts.stop();
+
+    // Try to flush pending progress when the reader closes
+    _progressRepo.flushPendingProgress();
+
     super.dispose();
   }
 
@@ -527,8 +554,13 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
 
       // Show success feedback
       _showSuccessMessage();
+
+      // Persist progress (not completed)
+      _saveProgress(isCompleted: false);
     } else {
       // Story completed!
+      // Persist completion state before showing dialog
+      _saveProgress(isCompleted: true);
       _showCompletionDialog();
     }
   }
@@ -673,6 +705,82 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     }
   }
 
+  // ---------- Progress integration ----------
+  Future<void> _loadProgress() async {
+    if (widget.storyId == null) return;
+
+    try {
+      final local = await _progressRepo.getLocalProgress(widget.storyId!);
+      final server = await _progressRepo.fetchServerProgress(widget.storyId!);
+
+      Progress? chosen;
+      if (local != null && server != null) {
+        chosen = local.updatedAt.isAfter(server.updatedAt) ? local : server;
+      } else {
+        chosen = local ?? server;
+      }
+
+      if (chosen != null) {
+        final idxNum = chosen.sentenceIndex.clamp(
+          0,
+          max(0, _sentences.length - 1),
+        );
+        final idx = idxNum.toInt();
+        if (mounted) {
+          setState(() {
+            _currentSentence = idx;
+            // mark previous sentences as completed
+            for (int s = 0; s < _sentences.length; s++) {
+              _sentenceCompleted[s] = s < idx;
+            }
+            // reset word status and mark current sentence first word as current
+            _applyResumeToWordStatus(idx);
+            _expectedSentence = _sentences[_currentSentence];
+          });
+        }
+      }
+    } catch (_) {
+      // ignore progress load errors silently
+    }
+  }
+
+  void _applyResumeToWordStatus(int sentenceIdx) {
+    for (int s = 0; s < _sentences.length; s++) {
+      _wordStatus[s] = {};
+      for (int w = 0; w < _sentenceWords[s].length; w++) {
+        if (s < sentenceIdx) {
+          _wordStatus[s]![w] = WordStatus.correct;
+        } else if (s == sentenceIdx) {
+          _wordStatus[s]![w] = w == 0 ? WordStatus.current : WordStatus.pending;
+        } else {
+          _wordStatus[s]![w] = WordStatus.pending;
+        }
+      }
+    }
+  }
+
+  Future<void> _saveProgress({required bool isCompleted}) async {
+    if (widget.storyId == null) return;
+    try {
+      final user = _progressRepo.supa.auth.currentUser;
+      if (user == null) return;
+      final p = Progress(
+        userId: user.id,
+        storyId: widget.storyId!,
+        pageId: null,
+        sentenceIndex: _currentSentence,
+        isCompleted: isCompleted,
+        updatedAt: DateTime.now(),
+        meta: {'title': widget.storyTitle},
+      );
+
+      await _progressRepo.saveLocalProgress(p);
+      await _progressRepo.enqueueForSync(p);
+    } catch (_) {
+      // ignore persistence errors
+    }
+  }
+
   // ---------- UI ----------
   @override
   Widget build(BuildContext context) {
@@ -682,12 +790,79 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
         foregroundColor: Colors.white,
         title: Text('Reading Practice'),
         actions: [
+          // Favorite button (kept first so language toggle sits beside it)
           if (widget.storyId != null)
             IconButton(
               icon: Icon(
                 _isFavorite == true ? Icons.favorite : Icons.favorite_border,
               ),
               onPressed: _toggleFavorite,
+            ),
+
+          // Language toggle shown only when both localized texts are provided
+          if (widget.pageTextEn != null && widget.pageTextTl != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: PopupMenuButton<String>(
+                tooltip: 'Select language',
+                onSelected: (value) {
+                  if (!mounted) return;
+                  setState(() {
+                    if (value == 'en') {
+                      _selectedLang = 'en';
+                      _lang = 'English';
+                      final text = widget.pageTextEn ?? widget.pageText;
+                      _prepareSentences(text);
+                    } else if (value == 'tl') {
+                      _selectedLang = 'tl';
+                      _lang = 'Filipino';
+                      final text = widget.pageTextTl ?? widget.pageText;
+                      _prepareSentences(text);
+                    } else {
+                      _selectedLang = 'auto';
+                      _lang = 'Auto';
+                      _prepareSentences(widget.pageText);
+                    }
+
+                    // Re-init word statuses and re-apply resume at current sentence
+                    _initializeWordStatus();
+                    _applyResumeToWordStatus(_currentSentence);
+                    _expectedSentence = _sentences[_currentSentence];
+                  });
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'en', child: Text('English')),
+                  const PopupMenuItem(value: 'tl', child: Text('Filipino')),
+                  const PopupMenuItem(value: 'auto', child: Text('Auto')),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.language, color: Colors.white, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        _selectedLang == 'en'
+                            ? 'EN'
+                            : _selectedLang == 'tl'
+                            ? 'TL'
+                            : 'Auto',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
         ],
       ),

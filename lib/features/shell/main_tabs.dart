@@ -4,7 +4,7 @@ import 'package:storytots/core/constants.dart';
 
 import 'package:storytots/features/home/screens/home_screen.dart';
 import 'package:storytots/features/library/screens/library_screen.dart';
-import 'package:storytots/features/settings/screens/settings_screen.dart'; // ← NEW
+import 'package:storytots/features/settings/screens/settings_screen.dart';
 import 'package:storytots/features/games/games_screen.dart';
 
 class MainTabs extends StatefulWidget {

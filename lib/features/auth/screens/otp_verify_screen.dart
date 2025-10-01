@@ -3,13 +3,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants.dart';
 import '../../../../core/widgets/st_text_field.dart';
 import '../../../../data/repositories/profile_repository.dart';
+import '../../../../data/repositories/auth_cache_repository.dart';
 
 class OtpVerifyScreen extends StatefulWidget {
   final String email;
   final String? firstName;
   final String? lastName;
-  final String? birthDate; 
-  final String? password;  
+  final String? birthDate;
+  final String? password;
 
   const OtpVerifyScreen({
     super.key,
@@ -27,6 +28,7 @@ class OtpVerifyScreen extends StatefulWidget {
 class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
   final _formKey = GlobalKey<FormState>();
   final _code = TextEditingController();
+  final _authCache = AuthCacheRepository();
   bool _verifying = false;
   bool _resending = false;
 
@@ -64,6 +66,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
       if (pw.isNotEmpty) {
         await auth.updateUser(UserAttributes(password: pw));
       }
+
+      // Cache the session for persistent login
+      await _authCache.cacheCurrentSession();
 
       // Seed/ensure the profile row, then decide where to go.
       final repo = ProfileRepository();
@@ -122,57 +127,71 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(fit: StackFit.expand, children: [
-        Image.asset('assets/images/storytots_background.png', fit: BoxFit.cover),
-        Container(color: Colors.white.withOpacity(0.90)),
-        Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Image.asset('assets/images/storytots_logo_front.png', height: 72),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Enter the code we sent to\n${widget.email}',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  STTextField(
-                    controller: _code,
-                    label: '6-digit code',
-                    keyboardType: TextInputType.number,
-                    validator: _codeValidator,
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 48,
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _verifying ? null : _verify,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(brandPurple),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        elevation: 8,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/storytots_background.png',
+            fit: BoxFit.cover,
+          ),
+          Container(color: Colors.white.withOpacity(0.90)),
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/images/storytots_logo_front.png',
+                        height: 72,
                       ),
-                      child: Text(_verifying ? 'Verifying…' : 'Verify & Continue'),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Enter the code we sent to\n${widget.email}',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      STTextField(
+                        controller: _code,
+                        label: '6-digit code',
+                        keyboardType: TextInputType.number,
+                        validator: _codeValidator,
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 48,
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _verifying ? null : _verify,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(brandPurple),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 8,
+                          ),
+                          child: Text(
+                            _verifying ? 'Verifying…' : 'Verify & Continue',
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _resending ? null : _resend,
+                        child: Text(_resending ? 'Resending…' : 'Resend code'),
+                      ),
+                    ],
                   ),
-                  TextButton(
-                    onPressed: _resending ? null : _resend,
-                    child: Text(_resending ? 'Resending…' : 'Resend code'),
-                  ),
-                ]),
+                ),
               ),
             ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/constants.dart';
+import 'features/auth/screens/auth_splash_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/signup_screen.dart';
 import 'features/auth/screens/otp_email_screen.dart';
@@ -21,8 +22,9 @@ class StoryTotsApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(brandPurple)),
         scaffoldBackgroundColor: const Color(appBg),
       ),
-      initialRoute: '/login',
+      initialRoute: '/',
       routes: {
+        '/': (_) => const AuthSplashScreen(),
         '/login': (_) => const LoginScreen(),
         '/signup': (_) => const SignUpScreen(),
         '/otp': (_) => const OtpEmailScreen(),

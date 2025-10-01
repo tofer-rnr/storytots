@@ -7,6 +7,7 @@ import '../../reader/story_details_screen.dart';
 import '../../reader/reading_page_v3.dart';
 import '../../reader/speech/speech_service_factory.dart';
 import '../widgets/story_card.dart';
+import 'browse_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -176,20 +177,39 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           child: Row(
-                            children: const [
-                              Icon(Icons.search_rounded),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: TextField(
-                                  decoration: InputDecoration(
-                                    hintText: 'Search',
-                                    border: InputBorder.none,
+                            children: [
+                              const Icon(Icons.menu_book_rounded),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  'Explore stories and collections',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
-                              // mic icon is decorative for now
+                              FilledButton(
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const BrowseScreen(),
+                                  ),
+                                ),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(brandPurple),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text('Browse more'),
+                              ),
                             ],
                           ),
                         ),
