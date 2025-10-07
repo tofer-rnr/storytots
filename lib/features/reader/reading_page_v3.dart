@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:storytots/data/repositories/reading_activity_repository.dart';
 
 import '../../core/constants.dart';
 import 'karaoke_text.dart';
@@ -59,7 +60,6 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
   late final SpeechEngine _speechService;
   bool _serviceReady = false;
   bool _listening = false;
-  String _lang = 'Auto';
 
   // Speech processing - enhanced for sentences
   String _currentTranscript = '';
@@ -86,6 +86,12 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
 
   // Track selected language for toggle; values: 'auto' (default), 'en', 'tl'
   String _selectedLang = 'auto';
+  String _lang = 'Auto';
+
+  // Reading activity tracking
+  final _activityRepo = ReadingActivityRepository();
+  DateTime? _langStartedAt;
+  String? _sessionLang; // 'en' or 'tl'
 
   @override
   void initState() {
@@ -116,10 +122,41 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
         setState(() => _listening = ls);
       }
     });
+
+    // Initialize language session start once initial text/lang is resolved in _prepare
+    // Schedule after first frame to ensure _selectedLang has been inferred.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final current = (_selectedLang == 'en' || _selectedLang == 'tl')
+          ? _selectedLang
+          : null; // ignore 'auto'
+      _sessionLang = current;
+      _langStartedAt = DateTime.now();
+    });
+  }
+
+  void _finishLanguageSegment() {
+    if (_langStartedAt == null) return;
+    final lang = _sessionLang;
+    if (lang != 'en' && lang != 'tl') return;
+    final now = DateTime.now();
+    final dur = now.difference(_langStartedAt!);
+    if (dur.inSeconds > 0) {
+      _activityRepo.addReadingSegment(
+        lang: lang!,
+        duration: dur,
+        storyId: widget.storyId,
+        startedAt: _langStartedAt,
+        endedAt: now,
+      );
+    }
+    _langStartedAt = now;
   }
 
   @override
   void dispose() {
+    // finalize any in-progress segment and try to flush
+    _finishLanguageSegment();
+    _activityRepo.flushQueue();
     _statusTimer?.cancel();
     _sentenceTimeout?.cancel();
     _stopListen();
@@ -806,6 +843,8 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
               child: PopupMenuButton<String>(
                 tooltip: 'Select language',
                 onSelected: (value) {
+                  // finalize previous segment before switching
+                  _finishLanguageSegment();
                   if (!mounted) return;
                   setState(() {
                     if (value == 'en') {
@@ -813,21 +852,22 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
                       _lang = 'English';
                       final text = widget.pageTextEn ?? widget.pageText;
                       _prepareSentences(text);
+                      _sessionLang = 'en';
+                      _langStartedAt = DateTime.now();
                     } else if (value == 'tl') {
                       _selectedLang = 'tl';
                       _lang = 'Filipino';
                       final text = widget.pageTextTl ?? widget.pageText;
                       _prepareSentences(text);
+                      _sessionLang = 'tl';
+                      _langStartedAt = DateTime.now();
                     } else {
                       _selectedLang = 'auto';
                       _lang = 'Auto';
-                      _prepareSentences(widget.pageText);
+                      // In auto mode we don't attribute time to a single language
+                      _sessionLang = null;
+                      _langStartedAt = DateTime.now();
                     }
-
-                    // Re-init word statuses and re-apply resume at current sentence
-                    _initializeWordStatus();
-                    _applyResumeToWordStatus(_currentSentence);
-                    _expectedSentence = _sentences[_currentSentence];
                   });
                 },
                 itemBuilder: (context) => [
@@ -835,32 +875,13 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
                   const PopupMenuItem(value: 'tl', child: Text('Filipino')),
                   const PopupMenuItem(value: 'auto', child: Text('Auto')),
                 ],
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.language, color: Colors.white, size: 18),
-                      const SizedBox(width: 6),
-                      Text(
-                        _selectedLang == 'en'
-                            ? 'EN'
-                            : _selectedLang == 'tl'
-                            ? 'TL'
-                            : 'Auto',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.translate),
+                    const SizedBox(width: 6),
+                    Text(_lang),
+                    const Icon(Icons.arrow_drop_down),
+                  ],
                 ),
               ),
             ),

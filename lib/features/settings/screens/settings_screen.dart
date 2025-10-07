@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:storytots/data/repositories/auth_cache_repository.dart';
+import 'package:storytots/core/constants.dart';
+import 'package:storytots/features/settings/screens/profile_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -8,67 +10,145 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: const Color(0xFF6366F1),
-        foregroundColor: Colors.white,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Account',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF6366F1),
+      backgroundColor: const Color(appBg),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 12),
+              // Top branded pill header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(brandPurple),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(brandPurple).withOpacity(0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'STORYTOTS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Color(0xFF6366F1)),
-              title: const Text('Logout'),
-              subtitle: const Text('Sign out of your account'),
-              onTap: () => _logout(context),
-            ),
-            const Divider(),
-            const SizedBox(height: 16),
-            const Text(
-              'App Information',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF6366F1),
+
+              const SizedBox(height: 16),
+
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'SETTINGS',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: const Color(brandPurple),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 3,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const ListTile(
-              leading: Icon(Icons.info, color: Color(0xFF6366F1)),
-              title: Text('Version'),
-              subtitle: Text('1.0.0'),
-            ),
-          ],
+
+              const SizedBox(height: 16),
+
+              // Background subtle pattern (optional)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    _SettingsActionCard(
+                      label: 'PROFILE',
+                      onTap: () => _openProfile(context),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionCard(
+                      label: 'NOTIFICATION',
+                      onTap: () => _comingSoon(context, 'Notifications'),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionCard(
+                      label: 'ABOUT',
+                      onTap: () => _comingSoon(context, 'About'),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionCard(
+                      label: 'HELP',
+                      onTap: () => _comingSoon(context, 'Help'),
+                    ),
+                    const SizedBox(height: 22),
+
+                    // Logout Button styled to match design
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                          ),
+                          side: BorderSide(color: const Color(brandPurple), width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          foregroundColor: const Color(brandPurple),
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        onPressed: () => _logout(context),
+                        child: const Text('LOGOUT'),
+                      ),
+                    ),
+
+                    const SizedBox(height: 28),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  void _openProfile(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+    );
+  }
+
+  void _comingSoon(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature is coming soon'),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
   Future<void> _logout(BuildContext context) async {
     try {
-      // Clear cached session
       final authCache = AuthCacheRepository();
       await authCache.clearCache();
-
-      // Sign out from Supabase
       await Supabase.instance.client.auth.signOut();
 
       if (context.mounted) {
-        // Navigate to login screen
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     } catch (error) {
       if (context.mounted) {
@@ -80,5 +160,53 @@ class SettingsScreen extends StatelessWidget {
         );
       }
     }
+  }
+}
+
+class _SettingsActionCard extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _SettingsActionCard({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: const Color(brandPurple),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(brandPurple).withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.white),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
