@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'core/constants.dart';
 import 'data/repositories/auth_cache_repository.dart';
 import 'app.dart';
+import 'core/services/sound_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,9 @@ Future<void> main() async {
   await authCache.initialize();
 
   await Permission.microphone.request();
+
+  // Prepare global click sound
+  await SoundService.instance.init();
 
   runApp(const StoryTotsApp());
 }

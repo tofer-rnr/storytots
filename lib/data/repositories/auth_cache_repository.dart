@@ -16,15 +16,15 @@ class AuthCacheRepository {
     if (session == null) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now().toIso8601String().split(
-      'T',
-    )[0]; // YYYY-MM-DD format
+    final today = DateTime.now().toIso8601String().split('T')[0]; // YYYY-MM-DD
 
     // Cache session data
     await prefs.setString(_sessionKey, jsonEncode(session.toJson()));
     await prefs.setString(_sessionDateKey, today);
     await prefs.setString(_userIdKey, session.user.id);
 
+    // Debug
+    // ignore: avoid_print
     print('[AuthCache] Session cached for date: $today');
   }
 
@@ -37,6 +37,7 @@ class AuthCacheRepository {
 
     // Check if we have a session cached for today
     if (cachedDate != today) {
+      // ignore: avoid_print
       print(
         '[AuthCache] No valid session for today (cached: $cachedDate, today: $today)',
       );
@@ -46,15 +47,17 @@ class AuthCacheRepository {
 
     final sessionJson = prefs.getString(_sessionKey);
     if (sessionJson == null) {
+      // ignore: avoid_print
       print('[AuthCache] No cached session data found');
       return false;
     }
 
+    // ignore: avoid_print
     print('[AuthCache] Valid cached session found for today');
     return true;
   }
 
-  /// Restore session from cache if valid
+  /// Restore session from cache if valid. Returns true if session restored.
   Future<bool> restoreSession() async {
     if (!await hasValidCachedSession()) {
       return false;
@@ -63,17 +66,25 @@ class AuthCacheRepository {
     try {
       final prefs = await SharedPreferences.getInstance();
       final sessionJson = prefs.getString(_sessionKey);
-
       if (sessionJson == null) return false;
 
       final sessionData = jsonDecode(sessionJson) as Map<String, dynamic>;
 
-      // Set the session directly using setSession
-      await _supabase.auth.setSession(sessionData['access_token'] as String);
+      // Use refresh_token to restore a fresh session
+      final refreshToken = sessionData['refresh_token'] as String?;
+      if (refreshToken == null || refreshToken.isEmpty) {
+        // ignore: avoid_print
+        print('[AuthCache] No refresh_token in cached session');
+        return false;
+      }
 
+      await _supabase.auth.setSession(refreshToken);
+
+      // ignore: avoid_print
       print('[AuthCache] Session restored successfully');
       return true;
     } catch (e) {
+      // ignore: avoid_print
       print('[AuthCache] Failed to restore session: $e');
       await clearCache();
       return false;
@@ -86,6 +97,7 @@ class AuthCacheRepository {
     await prefs.remove(_sessionKey);
     await prefs.remove(_sessionDateKey);
     await prefs.remove(_userIdKey);
+    // ignore: avoid_print
     print('[AuthCache] Cache cleared');
   }
 
@@ -95,36 +107,26 @@ class AuthCacheRepository {
     return prefs.getString(_userIdKey);
   }
 
-  /// Check if the current session should be refreshed (for next day login requirement)
-  bool shouldRequireReLogin() {
-    final session = _supabase.auth.currentSession;
-    if (session == null) return true;
-
-    // For daily login requirement, we'll rely on our cache date check
-    // The cache is cleared daily, so if we get here, the session is still valid for today
-    return false;
-  }
-
   /// Initialize auth cache - call this in main() or app startup
   Future<void> initialize() async {
+    // ignore: avoid_print
     print('[AuthCache] Initializing...');
 
-    // Try to restore session first
-    final restored = await restoreSession();
-
-    if (!restored) {
-      print('[AuthCache] No valid session to restore');
-      return;
+    // If cache date is not today, enforce re-login by clearing and signing out
+    final hasValidForToday = await hasValidCachedSession();
+    if (!hasValidForToday) {
+      await _supabase.auth.signOut();
+    } else {
+      // Try to restore session when valid cache exists
+      await restoreSession();
     }
 
-    // Set up listener to cache session changes
+    // Always attach listener to keep cache in sync with auth state
     _supabase.auth.onAuthStateChange.listen((data) {
       final session = data.session;
       if (session != null) {
-        // Cache new sessions
         cacheCurrentSession();
       } else {
-        // Clear cache when user logs out
         clearCache();
       }
     });

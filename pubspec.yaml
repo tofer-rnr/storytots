@@ -25,6 +25,7 @@ dependencies:
   path_provider: ^2.1.1
   http: ^1.2.0
   shared_preferences: ^2.3.2
+  audioplayers: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -88,6 +89,20 @@ flutter:
     - assets/stories/_normalized_stories/Legend_of_the_PineApple/en/
     - assets/stories/_normalized_stories/Legend_of_the_PineApple/tl/pages/
     - assets/stories/_normalized_stories/Legend_of_the_PineApple/tl/
+    - assets/sounds/
+  fonts:
+    - family: Growback
+      fonts:
+        - asset: assets/fonts/growback.ttf
+    - family: RustyHooks
+      fonts:
+        - asset: assets/fonts/RustyHooks.ttf
+    - family: OddlyCalming
+      fonts:
+        - asset: assets/fonts/OddlyCalming.ttf
+    - family: CatchyMelody
+      fonts:
+        - asset: assets/fonts/CatchyMelody.ttf
 
 flutter_launcher_icons:
   android: true

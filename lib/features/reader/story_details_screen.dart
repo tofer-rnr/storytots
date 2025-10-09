@@ -195,6 +195,8 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
+                                fontFamily: 'OddlyCalming',
+                                fontSize: 18,
                               ),
                             ),
                           ),
@@ -252,133 +254,61 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
 
                                       // Try to load story content from assets
                                       String text =
-                                          'Let\'s read ${story.title}.'; // Default text
+                                          "Let's read ${story.title}.";
                                       bool contentLoaded = false;
 
                                       try {
-                                        // First, determine if we have this story in assets
                                         final storySlug = _slugifyTitle(
                                           story.title,
                                         );
-                                        // Language is either 'tl' or defaults to 'en'
                                         final language =
                                             story.language.toLowerCase() == 'tl'
                                             ? 'tl'
                                             : 'en';
 
-                                        print(
-                                          '📚 --------- STORY LOADING ----------',
-                                        );
-                                        print(
-                                          '📚 Story title: "${story.title}" (ID: ${story.id})',
-                                        );
-                                        print(
-                                          '📚 Story slug: "$storySlug", language: "$language"',
-                                        );
-                                        print(
-                                          '📚 ---------------------------------',
-                                        );
-
-                                        // DIRECT APPROACH: Try loading directly by slug
+                                        // Attempt direct load
                                         try {
-                                          print(
-                                            '📚 ATTEMPT 1: Direct loading with slug',
-                                          );
                                           text =
                                               await StoryAssetService.loadPageContent(
                                                 slug: storySlug,
                                                 language: language,
                                               );
-                                          print(
-                                            '📚 ✅ SUCCESS: Content loaded directly, length: ${text.length} chars',
-                                          );
                                           contentLoaded = true;
                                         } catch (directError) {
-                                          print(
-                                            '📚 ❌ FAILED direct loading: $directError',
-                                          );
-
-                                          // SEARCH APPROACH: Search through index
-                                          print(
-                                            '📚 ATTEMPT 2: Searching index for matching story',
-                                          );
+                                          // Search index
                                           bool foundInAssets = false;
-
                                           for (var item in StoriesIndex.items) {
-                                            print(
-                                              '📚 Checking index: "${item.title}" (${item.slug}) [${item.language}]',
-                                            );
-
-                                            // Method 1: Direct slug match
-                                            if (item.slug == storySlug &&
-                                                item.language == language) {
-                                              print(
-                                                '📚 ✓ MATCH! (direct slug match)',
-                                              );
-                                              foundInAssets = true;
-                                            }
-                                            // Method 2: Title-derived slug match
-                                            else if (_slugifyTitle(
-                                                      item.title,
-                                                    ) ==
-                                                    storySlug &&
-                                                item.language == language) {
-                                              print(
-                                                '📚 ✓ MATCH! (title-derived slug match)',
-                                              );
-                                              foundInAssets = true;
-                                            }
-                                            // Method 3: Title contains match
-                                            else if (item.title
-                                                    .toLowerCase()
-                                                    .contains(
-                                                      story.title.toLowerCase(),
-                                                    ) &&
-                                                item.language == language) {
-                                              print(
-                                                '📚 ✓ MATCH! (title contains match)',
-                                              );
-                                              foundInAssets = true;
-                                            }
-
-                                            if (foundInAssets) {
-                                              try {
-                                                print(
-                                                  '📚 Loading content from: ${item.page1Path}',
+                                            final matchesSlug =
+                                                item.slug == storySlug ||
+                                                _slugifyTitle(item.title) ==
+                                                    storySlug;
+                                            final matchesTitle = item.title
+                                                .toLowerCase()
+                                                .contains(
+                                                  story.title.toLowerCase(),
                                                 );
+                                            if ((matchesSlug || matchesTitle) &&
+                                                item.language == language) {
+                                              try {
                                                 text =
                                                     await StoryAssetService.loadPageContent(
                                                       slug: item.slug,
                                                       language: language,
                                                     );
-                                                print(
-                                                  '📚 ✅ Content loaded, length: ${text.length} chars',
-                                                );
+                                                foundInAssets = true;
                                                 contentLoaded = true;
                                                 break;
-                                              } catch (loadError) {
-                                                print(
-                                                  '📚 ❌ Failed to load content: $loadError',
-                                                );
-                                                foundInAssets =
-                                                    false; // Reset to try other matches
+                                              } catch (_) {
+                                                foundInAssets = false;
                                               }
                                             }
                                           }
 
-                                          // Fallbacks if not found in assets
                                           if (!foundInAssets) {
-                                            print(
-                                              '📚 ❌ Story not found in assets, using fallbacks',
-                                            );
-
-                                            // FALLBACK 1: StoryContent hardcoded mapping
+                                            // Fallbacks
                                             if (StoryContent.hasContent(
                                               story.id,
                                             )) {
-                                              print(
-                                                '📚 FALLBACK 1: Using legacy content mapping',
-                                              );
                                               final pages =
                                                   StoryContent.getPagesById(
                                                     story.id,
@@ -386,9 +316,6 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                               if (pages != null &&
                                                   pages.isNotEmpty) {
                                                 text = pages.first;
-                                                print(
-                                                  '📚 ✅ Using legacy page content: ${text.length} chars',
-                                                );
                                                 contentLoaded = true;
                                               } else {
                                                 final content =
@@ -397,50 +324,30 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                                     );
                                                 if (content != null) {
                                                   text = content;
-                                                  print(
-                                                    '📚 ✅ Using legacy story content: ${text.length} chars',
-                                                  );
                                                   contentLoaded = true;
                                                 }
                                               }
                                             }
 
-                                            // FALLBACK 2: Synopsis
                                             if (!contentLoaded &&
-                                                story.synopsis?.isNotEmpty ==
-                                                    true) {
-                                              print(
-                                                '📚 FALLBACK 2: Using synopsis',
-                                              );
+                                                (story.synopsis?.isNotEmpty ==
+                                                    true)) {
                                               text = story.synopsis!;
-                                              print(
-                                                '📚 ✅ Using synopsis: ${text.length} chars',
-                                              );
                                               contentLoaded = true;
                                             }
                                           }
                                         }
                                       } catch (e) {
-                                        // If any errors in the overall process
-                                        print(
-                                          '❌ Error in story loading process: $e',
-                                        );
                                         if (!contentLoaded &&
-                                            story.synopsis?.isNotEmpty ==
-                                                true) {
+                                            (story.synopsis?.isNotEmpty ==
+                                                true)) {
                                           text = story.synopsis!;
-                                          print(
-                                            '📚 Emergency fallback: Using synopsis: ${text.length} chars',
-                                          );
                                         }
                                       }
 
-                                      // Final text check
                                       if (text ==
-                                          'Let\'s read ${story.title}.') {
-                                        print(
-                                          '❗ WARNING: Using default text - no content was loaded',
-                                        );
+                                          "Let's read ${story.title}.") {
+                                        // still default
                                       }
 
                                       // Use reading page for all stories
@@ -564,48 +471,42 @@ class _CoverBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localAsset = _assetForTitle(title); // uses coverAssetForTitle()
+    final raw = coverUrl?.trim();
+    final isNetwork =
+        raw != null &&
+        (raw.startsWith('http://') || raw.startsWith('https://'));
 
-    ImageProvider imageProvider;
-    if ((coverUrl ?? '').isNotEmpty) {
-      imageProvider = NetworkImage(coverUrl!);
-    } else if (localAsset != null && localAsset.isNotEmpty) {
-      imageProvider = AssetImage(localAsset);
+    // Determine best asset fallback from title
+    final mappedAsset = coverAssetForTitle(title);
+
+    Widget child;
+    if (isNetwork) {
+      child = Image.network(
+        raw,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Image.asset(
+          mappedAsset ?? 'assets/images/arts.png',
+          fit: BoxFit.cover,
+        ),
+      );
     } else {
-      imageProvider = const AssetImage(
-        'assets/images/book_cover_placeholder.png',
+      String? assetPath = mappedAsset;
+      if (raw != null && raw.isNotEmpty) {
+        assetPath = raw.startsWith('assets/')
+            ? raw
+            : 'assets/images/covers/$raw';
+      }
+      child = Image.asset(
+        assetPath ?? 'assets/images/arts.png',
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            Image.asset('assets/images/arts.png', fit: BoxFit.cover),
       );
     }
 
-    return Container(
-      width: 220,
-      height: 300,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ],
-        image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
-      ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: AspectRatio(aspectRatio: 16 / 10, child: child),
     );
-  }
-
-  /// Try exact title; if not found, try title without the parenthetical part.
-  String? _assetForTitle(String t) {
-    final exact = coverAssetForTitle(t);
-    if (exact != null) return exact;
-
-    final i = t.indexOf('(');
-    if (i != -1) {
-      final stripped = t.substring(0, i).trim();
-      final alt = coverAssetForTitle(stripped);
-      if (alt != null) return alt;
-    }
-    return null;
   }
 }

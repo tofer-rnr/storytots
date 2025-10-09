@@ -16,15 +16,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const Map<String, String> topicThumb = {
-    'Fun & Adventure': 'assets/images/fun_and_adventure.png',
-    'Arts': 'assets/images/art.png',
-    'Family & Friends': 'assets/images/family_and_friend.png',
-    'Nature & Animals': 'assets/images/nature_and_animal.png',
-    'Fantasy': 'assets/images/fantasy.png',
-    'P.E. & Health': 'assets/images/Pe_and_health.png',
-  };
-
   final _storiesRepo = StoriesRepository();
 
   Future<Map<String, dynamic>?> _loadProfile() async {
@@ -137,7 +128,14 @@ class _HomeScreenState extends State<HomeScreen> {
               appBar: AppBar(
                 backgroundColor: const Color(brandPurple),
                 foregroundColor: Colors.white,
-                title: const Text('STORYTOTS'),
+                title: const Text(
+                  'storytots',
+                  style: TextStyle(
+                    fontFamily: 'Growback',
+                    fontSize: 24,
+                    letterSpacing: 1.5,
+                  ),
+                ),
                 actions: [
                   Padding(
                     padding: const EdgeInsets.only(right: 12),
@@ -245,133 +243,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 10),
 
                         // ✅ Continue Reading driven by DB (FIFO)
-                        FutureBuilder<List<Story>>(
-                          future: _loadContinueReading(),
-                          builder: (context, crSnap) {
-                            if (crSnap.connectionState !=
-                                ConnectionState.done) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                            final stories = crSnap.data ?? [];
-
-                            if (stories.isEmpty) {
-                              return Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Colors.black12,
-                                      blurRadius: 8,
-                                      offset: Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Text(
-                                  "No reading yet — let’s start an adventure! 📚✨\nTap any story to begin.",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              );
-                            }
-
-                            return SizedBox(
-                              height: 150,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: stories.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(width: 12),
-                                itemBuilder: (_, i) {
-                                  final story = stories[i];
-                                  return StoryCard(
-                                    story: story,
-                                    onTap: () {
-                                      // Optional: mark progress immediately
-                                      _storiesRepo.touchReadingHistory(
-                                        story.id,
-                                      );
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => StoryDetailsScreen(
-                                            storyId: story.id,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        ),
+                        _continueReadingSection(),
 
                         const SizedBox(height: 20),
 
-                        if (interests.isEmpty) ...[
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 10,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Choose Topics of Interest',
-                                  style: TextStyle(fontWeight: FontWeight.w700),
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Personalize StoryTots by selecting topics your child loves.',
-                                ),
-                                const SizedBox(height: 12),
-                                FilledButton(
-                                  onPressed: () => Navigator.pushNamed(
-                                    context,
-                                    '/onboarding',
-                                  ),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: const Color(brandPurple),
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: const Text('Pick topics'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ] else ...[
-                          for (final topic in interests) ...[
-                            const SizedBox(height: 20),
-                            _sectionTitle(
-                              topic,
-                              trailing: Icons.chevron_right_rounded,
-                              onTap: () {
-                                // TODO: navigate to topic page
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            _storyRow(sections[topic] ?? const []),
-                          ],
-                        ],
+                        ..._interestsSection(interests, sections),
                       ],
                     ),
                 ],
@@ -383,6 +259,130 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _continueReadingSection() {
+    return FutureBuilder<List<Story>>(
+      future: _loadContinueReading(),
+      builder: (context, crSnap) {
+        if (crSnap.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final stories = crSnap.data ?? [];
+        if (stories.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Text(
+              "No reading yet — let’s start an adventure! 📚✨\nTap any story to begin.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
+          );
+        }
+        return SizedBox(
+          height: 150,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: stories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) {
+              final story = stories[i];
+              return StoryCard(
+                story: story,
+                onTap: () {
+                  _storiesRepo.touchReadingHistory(story.id);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => StoryDetailsScreen(storyId: story.id),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _interestsSection(
+    List<String> interests,
+    Map<String, List<Story>> sections,
+  ) {
+    if (interests.isEmpty) {
+      return [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Choose Topics of Interest',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'RustyHooks',
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Personalize StoryTots by selecting topics your child loves.',
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => Navigator.pushNamed(context, '/onboarding'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(brandPurple),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Pick topics'),
+              ),
+            ],
+          ),
+        ),
+      ];
+    }
+
+    final widgets = <Widget>[];
+    for (final topic in interests) {
+      widgets.add(const SizedBox(height: 20));
+      widgets.add(
+        _sectionTitle(
+          topic,
+          trailing: Icons.chevron_right_rounded,
+          onTap: () {},
+        ),
+      );
+      widgets.add(const SizedBox(height: 10));
+      widgets.add(_storyRow(sections[topic] ?? const []));
+    }
+    return widgets;
+  }
+
   Widget _sectionTitle(String text, {IconData? trailing, VoidCallback? onTap}) {
     return Row(
       children: [
@@ -392,39 +392,14 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(
               letterSpacing: 3,
               fontWeight: FontWeight.w700,
+              fontFamily: 'RustyHooks',
+              fontSize: 20,
             ),
           ),
         ),
         if (trailing != null)
           IconButton(onPressed: onTap, icon: Icon(trailing)),
       ],
-    );
-  }
-
-  Widget _bookSquare({String? coverAsset, VoidCallback? onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: 90,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            ),
-          ],
-          image: DecorationImage(
-            image: AssetImage(
-              coverAsset ?? 'assets/images/book_cover_placeholder.png',
-            ),
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
     );
   }
 

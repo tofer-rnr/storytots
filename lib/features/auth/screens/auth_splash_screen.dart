@@ -21,26 +21,40 @@ class _AuthSplashScreenState extends State<AuthSplashScreen> {
   }
 
   Future<void> _checkAuthStatus() async {
-    // Give a brief moment to show the splash screen
-    await Future.delayed(const Duration(seconds: 1));
+    // brief splash
+    await Future.delayed(const Duration(milliseconds: 600));
 
     if (!mounted) return;
 
     try {
-      // Check if we have a valid cached session
-      final hasValidSession = await _authCache.hasValidCachedSession();
-      final currentUser = Supabase.instance.client.auth.currentUser;
+      // 1) Enforce daily login: if cache not for today, sign out and go to login
+      final validToday = await _authCache.hasValidCachedSession();
+      if (!validToday) {
+        await Supabase.instance.client.auth.signOut();
+        _navigateToLogin();
+        return;
+      }
 
-      if (hasValidSession && currentUser != null) {
-        // User is authenticated, check onboarding status
+      // 2) Check current session/user
+      final auth = Supabase.instance.client.auth;
+      var user = auth.currentUser;
+
+      // 3) If user still null, attempt restore from our cached refresh_token
+      if (user == null) {
+        final restored = await _authCache.restoreSession();
+        if (restored) {
+          user = auth.currentUser;
+        }
+      }
+
+      if (user != null) {
         await _routeToAppropriateScreen();
       } else {
-        // No valid session, go to login
         _navigateToLogin();
       }
     } catch (e) {
+      // ignore: avoid_print
       print('[AuthSplash] Error checking auth status: $e');
-      // On error, go to login screen
       _navigateToLogin();
     }
   }
@@ -59,6 +73,7 @@ class _AuthSplashScreenState extends State<AuthSplashScreen> {
         (_) => false,
       );
     } catch (e) {
+      // ignore: avoid_print
       print('[AuthSplash] Error checking profile: $e');
       _navigateToLogin();
     }

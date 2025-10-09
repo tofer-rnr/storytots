@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants.dart';
 import '../../../data/repositories/stories_repository.dart';
 import '../../reader/story_details_screen.dart';
+import '../../../data/cover_assets.dart';
 
 class BrowseScreen extends StatefulWidget {
   const BrowseScreen({super.key});
@@ -69,6 +70,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     letterSpacing: 2,
+                    fontFamily: 'RustyHooks',
+                    fontSize: 18,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -99,19 +102,18 @@ class _BrowseScreenState extends State<BrowseScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   child: Builder(
                                     builder: (context) {
-                                      final cover = story.coverUrl;
+                                      final raw = story.coverUrl?.trim();
                                       final isNetwork =
-                                          cover != null &&
-                                          (cover.startsWith('http://') ||
-                                              cover.startsWith('https://'));
+                                          raw != null &&
+                                          (raw.startsWith('http://') ||
+                                              raw.startsWith('https://'));
 
                                       if (isNetwork) {
                                         return Image.network(
-                                          cover,
+                                          raw,
                                           width: 120,
                                           height: double.infinity,
                                           fit: BoxFit.cover,
-                                          // show a light grey box while loading
                                           loadingBuilder:
                                               (context, child, progress) {
                                                 if (progress == null)
@@ -130,32 +132,36 @@ class _BrowseScreenState extends State<BrowseScreen> {
                                         );
                                       }
 
-                                      // fallback to asset or a grey box
-                                      final assetPath = () {
-                                        if (cover == null ||
-                                            cover.trim().isEmpty)
-                                          return 'assets/images/book_cover_placeholder.png';
-                                        final c = cover.trim();
-                                        // already a network url handled earlier
-                                        if (c.startsWith('assets/')) return c;
-                                        // if it's an absolute filesystem-like path, strip leading '/'
-                                        if (c.startsWith('/'))
-                                          return 'assets/images/covers/${c.substring(1)}';
-                                        // if it's likely a filename (e.g. 'The_Monkey_and_the_Turtle.png'), prefix covers dir
-                                        if (!c.contains('/'))
-                                          return 'assets/images/covers/$c';
-                                        // if it's a relative path like 'covers/name.jpg' or 'images/covers/name.jpg'
-                                        if (c.contains('covers/')) {
-                                          // ensure it starts with assets/
-                                          return c.startsWith('assets/')
-                                              ? c
-                                              : 'assets/images/${c.split('covers/').last.isEmpty ? '' : 'covers/${c.split('covers/').last}'}';
-                                        }
-                                        // fallback
-                                        return 'assets/images/covers/$c';
-                                      }();
+                                      // Resolve asset path
+                                      String? assetPath;
+                                      if (raw != null && raw.isNotEmpty) {
+                                        assetPath = raw.startsWith('assets/')
+                                            ? raw
+                                            : 'assets/images/covers/$raw';
+                                      } else {
+                                        assetPath = coverAssetForTitle(
+                                          story.title,
+                                        );
+                                      }
+
+                                      // Use asset when known; else fallback placeholder
+                                      if (assetPath != null) {
+                                        return Image.asset(
+                                          assetPath,
+                                          width: 120,
+                                          height: double.infinity,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stack) =>
+                                                  Container(
+                                                    width: 120,
+                                                    color: Colors.grey.shade200,
+                                                  ),
+                                        );
+                                      }
+
                                       return Image.asset(
-                                        assetPath,
+                                        'assets/images/arts.png',
                                         width: 120,
                                         height: double.infinity,
                                         fit: BoxFit.cover,
@@ -175,6 +181,11 @@ class _BrowseScreenState extends State<BrowseScreen> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontFamily: 'OddlyCalming',
+                                  fontSize: 14,
+                                  height: 1.2,
+                                ),
                               ),
                             ],
                           ),

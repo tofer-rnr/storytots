@@ -35,14 +35,18 @@ class ReadingActivityRepository {
     DateTime? endedAt,
   }) async {
     // Normalize language
-    final language = (lang == 'tl' || lang.toLowerCase() == 'filipino') ? 'tl' : 'en';
+    final language = (lang == 'tl' || lang.toLowerCase() == 'filipino')
+        ? 'tl'
+        : 'en';
     final seconds = duration.inSeconds;
     if (seconds <= 0) return;
 
     // Queue for server sync
     final prefs = await _prefs;
     final raw = prefs.getString(_queueKey);
-    final list = raw == null ? <Map<String, dynamic>>[] : List<Map<String, dynamic>>.from(json.decode(raw));
+    final list = raw == null
+        ? <Map<String, dynamic>>[]
+        : List<Map<String, dynamic>>.from(json.decode(raw));
 
     final now = DateTime.now();
     final item = {

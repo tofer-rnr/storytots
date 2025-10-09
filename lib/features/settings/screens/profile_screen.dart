@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:storytots/core/constants.dart';
 import 'package:storytots/data/repositories/reading_activity_repository.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -30,7 +31,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final Map<String, dynamic>? row = await client
         .from('profiles')
-        .select('email, first_name, last_name, birth_date, avatar_key, interests')
+        .select(
+          'email, first_name, last_name, birth_date, avatar_key, interests',
+        )
         .eq('id', user.id)
         .maybeSingle();
 
@@ -69,9 +72,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: purple,
         foregroundColor: Colors.white,
         centerTitle: true,
-        title: Image.asset('assets/images/storytots_logo_front.png', height: 22),
+        title: Image.asset(
+          'assets/images/storytots_logo_front.png',
+          height: 22,
+        ),
         actions: [
-          IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh))
+          IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: FutureBuilder<_ProfileData>(
@@ -90,7 +96,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset('assets/images/storytots_background.png', fit: BoxFit.cover),
+              Image.asset(
+                'assets/images/storytots_background.png',
+                fit: BoxFit.cover,
+              ),
               Container(color: Colors.white.withOpacity(0.94)),
               SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
@@ -109,7 +118,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: purple,
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: const [
-                              BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 6))
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 10,
+                                offset: Offset(0, 6),
+                              ),
                             ],
                           ),
                           child: Row(
@@ -120,21 +133,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(p.displayName,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                                    Text(
+                                      p.displayName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
                                     const SizedBox(height: 2),
-                                    Text(p.email,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                    Text(
+                                      p.email,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    ),
                                     const SizedBox(height: 8),
                                     Wrap(
                                       spacing: 6,
                                       runSpacing: 6,
                                       children: [
-                                        _pill(text: 'Age ${p.ageLabel}')
+                                        _pill(text: 'Age ${p.ageLabel}'),
                                       ],
                                     ),
                                   ],
@@ -142,13 +165,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               const SizedBox(width: 8),
                               TextButton(
-                                onPressed: () => ScaffoldMessenger.of(context)
-                                    .showSnackBar(const SnackBar(content: Text('Edit profile coming soon'))),
+                                onPressed: () async {
+                                  final changed = await Navigator.push<bool>(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => EditProfileScreen(
+                                        currentInterests: p.interests,
+                                        currentAvatarKeyOrPath: p.avatarAsset,
+                                      ),
+                                    ),
+                                  );
+                                  if (changed == true) _refresh();
+                                },
                                 style: TextButton.styleFrom(
                                   foregroundColor: Colors.white,
-                                  backgroundColor: Colors.white.withOpacity(.12),
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  backgroundColor: Colors.white.withOpacity(
+                                    .12,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                 ),
                                 child: const Text('Edit'),
                               ),
@@ -174,7 +214,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: p.interests.map((t) => _ghostChip(t)).toList(),
+                        children: p.interests
+                            .map((t) => _ghostChip(t))
+                            .toList(),
                       ),
 
                     const SizedBox(height: 12),
@@ -182,9 +224,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // Language progress (English/Filipino)
                     Row(
                       children: [
-                        Expanded(child: _pillStat('English', _fmtMinutes(_today?.englishMinutes ?? 0))),
+                        Expanded(
+                          child: _pillStat(
+                            'English',
+                            _fmtMinutes(_today?.englishMinutes ?? 0),
+                          ),
+                        ),
                         const SizedBox(width: 12),
-                        Expanded(child: _pillStat('Filipino', _fmtMinutes(_today?.filipinoMinutes ?? 0))),
+                        Expanded(
+                          child: _pillStat(
+                            'Filipino',
+                            _fmtMinutes(_today?.filipinoMinutes ?? 0),
+                          ),
+                        ),
                       ],
                     ),
 
@@ -242,6 +294,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   static String _avatarAssetFromKey(String? key) {
+    if (key == null || key.isEmpty) {
+      return 'assets/images/avatar_placeholder.png';
+    }
+    // Allow storing full asset path in DB
+    if (key.startsWith('assets/')) return key;
     switch (key) {
       case 'boy':
         return 'assets/images/boy.png';
@@ -272,7 +329,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white24),
       ),
-      child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 12)),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
     );
   }
 
@@ -284,25 +344,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 6)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(Icons.language, color: const Color(brandPurple).withOpacity(0.9)),
+          Icon(
+            Icons.language,
+            color: const Color(brandPurple).withOpacity(0.9),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 6),
                 Text(
                   value,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                  ),
                 ),
               ],
             ),
@@ -319,7 +392,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: const Color(brandPurple),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 6))],
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -330,7 +409,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(
               'ACTIVITY\nREPORT',
               maxLines: 2,
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -343,19 +425,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 6))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('TIME SPENT', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+          const Text(
+            'TIME SPENT',
+            style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.5),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _chipCard(Icons.videogame_asset_rounded, 'GAME', _fmtMinutes(game))),
+              Expanded(
+                child: _chipCard(
+                  Icons.videogame_asset_rounded,
+                  'GAME',
+                  _fmtMinutes(game),
+                ),
+              ),
               const SizedBox(width: 10),
-              Expanded(child: _chipCard(Icons.menu_book_rounded, 'READING', _fmtMinutes(reading))),
+              Expanded(
+                child: _chipCard(
+                  Icons.menu_book_rounded,
+                  'READING',
+                  _fmtMinutes(reading),
+                ),
+              ),
             ],
           ),
         ],
@@ -377,8 +480,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: const [
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 14),
-                child: Text('Badges & Rewards',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                child: Text(
+                  'Badges & Rewards',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
@@ -401,7 +509,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static Widget _chipCard(IconData icon, String title, String subtitle) {
     return Container(
       height: 70,
-      decoration: BoxDecoration(color: const Color(brandPurple), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: const Color(brandPurple),
+        borderRadius: BorderRadius.circular(12),
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
@@ -411,11 +522,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(subtitle, style: const TextStyle(color: Colors.white70)),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -445,7 +562,9 @@ class _Avatar extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+        ],
       ),
       child: ClipOval(
         child: Image.asset(
@@ -470,7 +589,10 @@ class _SectionTitle extends StatelessWidget {
   final String text;
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: const TextStyle(letterSpacing: 3, fontWeight: FontWeight.w800));
+    return Text(
+      text,
+      style: const TextStyle(letterSpacing: 3, fontWeight: FontWeight.w800),
+    );
   }
 }
 
@@ -492,7 +614,9 @@ class _CircleGauge extends StatelessWidget {
           CircularProgressIndicator(
             value: 1,
             strokeWidth: 8,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.black12.withOpacity(.08)),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              Colors.black12.withOpacity(.08),
+            ),
           ),
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: value.clamp(0.0, 1.0)),
@@ -505,7 +629,12 @@ class _CircleGauge extends StatelessWidget {
               backgroundColor: Colors.transparent,
             ),
           ),
-          Center(child: Text('$pct%', style: const TextStyle(fontWeight: FontWeight.w800))),
+          Center(
+            child: Text(
+              '$pct%',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
         ],
       ),
     );
@@ -520,17 +649,29 @@ class _ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 42),
-        const SizedBox(height: 8),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 24.0), child: Text(message, textAlign: TextAlign.center)),
-        const SizedBox(height: 12),
-        FilledButton(
-          onPressed: onRetry,
-          style: FilledButton.styleFrom(backgroundColor: const Color(brandPurple)),
-          child: const Text('Try again'),
-        ),
-      ]),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Colors.redAccent,
+            size: 42,
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Text(message, textAlign: TextAlign.center),
+          ),
+          const SizedBox(height: 12),
+          FilledButton(
+            onPressed: onRetry,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(brandPurple),
+            ),
+            child: const Text('Try again'),
+          ),
+        ],
+      ),
     );
   }
 }

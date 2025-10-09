@@ -14,6 +14,7 @@ import 'speech/engine.dart';
 import 'speech/speech_service_factory.dart';
 import '../../data/repositories/library_repository.dart';
 import '../../data/repositories/progress_repository.dart';
+import '../../data/repositories/assessment_repository.dart';
 
 class ReadingPageV3 extends StatefulWidget {
   const ReadingPageV3({
@@ -77,6 +78,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
   // UI state
   final _libraryRepo = LibraryRepository();
   final _progressRepo = ProgressRepository();
+  final _assessmentRepo = AssessmentRepository();
   bool? _isFavorite;
   Timer? _statusTimer;
 
@@ -598,6 +600,10 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       // Story completed!
       // Persist completion state before showing dialog
       _saveProgress(isCompleted: true);
+      // Mark as available for assessment
+      if (widget.storyId != null) {
+        _assessmentRepo.addCompletedStory(widget.storyId!);
+      }
       _showCompletionDialog();
     }
   }
@@ -825,7 +831,14 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       appBar: AppBar(
         backgroundColor: const Color(brandPurple),
         foregroundColor: Colors.white,
-        title: Text('Reading Practice'),
+        title: const Text(
+          'Reading Practice',
+          style: TextStyle(
+            fontFamily: 'RustyHooks',
+            fontWeight: FontWeight.w800,
+            letterSpacing: 2,
+          ),
+        ),
         actions: [
           // Favorite button (kept first so language toggle sits beside it)
           if (widget.storyId != null)
@@ -908,7 +921,14 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
-                    child: _buildStoryContent(),
+                    child: DefaultTextStyle.merge(
+                      style: const TextStyle(
+                        fontFamily: 'CatchyMelody',
+                        fontSize: 20,
+                        height: 1.45,
+                      ),
+                      child: _buildStoryContent(),
+                    ),
                   ),
                 ),
 

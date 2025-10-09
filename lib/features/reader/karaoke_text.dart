@@ -48,6 +48,7 @@ class KaraokeText extends StatelessWidget {
             fontWeight: _weightFor(i),
             fontSize: 18,
             height: 1.35,
+            fontFamily: 'CatchyMelody',
           ),
         );
       }),
@@ -56,10 +57,7 @@ class KaraokeText extends StatelessWidget {
 }
 
 class KaraokeReadingPage extends StatefulWidget {
-  const KaraokeReadingPage({
-    super.key,
-    required this.targetText,
-  });
+  const KaraokeReadingPage({super.key, required this.targetText});
 
   final String targetText;
 
@@ -129,14 +127,18 @@ class _KaraokeReadingPageState extends State<KaraokeReadingPage> {
   void _startListening() async {
     if (!_engineReady) return;
     // ignore: avoid_print
-    print('[KaraokePage] Start listening (lang=$_lang, locale=${_resolvedLocaleFromToggle ?? 'auto'})');
+    print(
+      '[KaraokePage] Start listening (lang=$_lang, locale=${_resolvedLocaleFromToggle ?? 'auto'})',
+    );
     await _engine.start(
       onWords: (List<String> newWords) {
         if (newWords.isEmpty) return;
         // Debug transcript
         _recognizedText = (_recognizedText + ' ' + newWords.join(' ')).trim();
         // ignore: avoid_print
-        print('[KaraokePage] +${newWords.length} word(s): ${newWords.join(' ')}');
+        print(
+          '[KaraokePage] +${newWords.length} word(s): ${newWords.join(' ')}',
+        );
 
         for (final w in newWords) {
           if (_recentWords.isEmpty || _recentWords.last != w) {
@@ -347,9 +349,13 @@ class _KaraokeReadingPageState extends State<KaraokeReadingPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             LinearProgressIndicator(
-              value: _targetTokens.isEmpty ? 0.0 : _currentIndex / _targetTokens.length,
+              value: _targetTokens.isEmpty
+                  ? 0.0
+                  : _currentIndex / _targetTokens.length,
               backgroundColor: Colors.grey[300],
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.deepPurple),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Colors.deepPurple,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -392,10 +398,14 @@ class _KaraokeReadingPageState extends State<KaraokeReadingPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _recognizedText.isEmpty ? 'Start speaking...' : _recognizedText,
+                    _recognizedText.isEmpty
+                        ? 'Start speaking...'
+                        : _recognizedText,
                     style: TextStyle(
                       color: Colors.blue[800],
-                      fontStyle: _recognizedText.isEmpty ? FontStyle.italic : FontStyle.normal,
+                      fontStyle: _recognizedText.isEmpty
+                          ? FontStyle.italic
+                          : FontStyle.normal,
                     ),
                   ),
                 ],
@@ -406,13 +416,18 @@ class _KaraokeReadingPageState extends State<KaraokeReadingPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
-                  onPressed: _engineReady ? (_isListening ? _stopListening : _startListening) : null,
+                  onPressed: _engineReady
+                      ? (_isListening ? _stopListening : _startListening)
+                      : null,
                   icon: Icon(_isListening ? Icons.mic_off : Icons.mic),
                   label: Text(_isListening ? 'Stop' : 'Start'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _isListening ? Colors.red : Colors.green,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -424,7 +439,10 @@ class _KaraokeReadingPageState extends State<KaraokeReadingPage> {
               ],
             ),
             const SizedBox(height: 24),
-            const Text('Legend:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Legend:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 16,
@@ -450,10 +468,7 @@ class _KaraokeReadingPageState extends State<KaraokeReadingPage> {
 }
 
 class _LegendItem extends StatelessWidget {
-  const _LegendItem({
-    required this.color,
-    required this.label,
-  });
+  const _LegendItem({required this.color, required this.label});
 
   final Color color;
   final String label;
@@ -466,10 +481,7 @@ class _LegendItem extends StatelessWidget {
         Container(
           width: 16,
           height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
         Text(label),

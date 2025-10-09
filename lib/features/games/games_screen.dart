@@ -1,354 +1,343 @@
 import 'package:flutter/material.dart';
 
-class GamesScreen extends StatelessWidget {
+import '../../core/constants.dart';
+import '../../data/repositories/assessment_repository.dart';
+import '../../data/repositories/stories_repository.dart';
+import '../../data/cover_assets.dart';
+
+class GamesScreen extends StatefulWidget {
   const GamesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Storytots Games'),
-        backgroundColor: const Color(0xFF6C63FF),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          _GameCard(
-            title: 'Word Match',
-            description:
-                'Match each word to its picture. Learn new words from stories!',
-            icon: Icons.extension,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const WordMatchGame()),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _GameCard(
-            title: 'Story Sequence',
-            description:
-                'Arrange the story in the correct order. Build your story skills!',
-            icon: Icons.timeline,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const StorySequenceGame()),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  State<GamesScreen> createState() => _GamesScreenState();
 }
 
-class _GameCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _GameCard({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 4,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Icon(icon, size: 48, color: const Color(0xFF6C63FF)),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// --- Game 1: Word Match ---
-class WordMatchGame extends StatefulWidget {
-  const WordMatchGame({super.key});
-
-  @override
-  State<WordMatchGame> createState() => _WordMatchGameState();
-}
-
-class _WordMatchGameState extends State<WordMatchGame> {
-  final List<_WordMatchItem> items = [
-    _WordMatchItem(word: 'Cat', image: 'assets/background/images/cat.png'),
-    _WordMatchItem(word: 'Dog', image: 'assets/background/images/dog.png'),
-    _WordMatchItem(word: 'Girl', image: 'assets/background/images/girl.png'),
-    _WordMatchItem(word: 'Boy', image: 'assets/background/images/boy.png'),
-  ];
-  final Map<String, String?> matches = {};
-  String? draggedWord;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Word Match'),
-        backgroundColor: const Color(0xFF6C63FF),
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 24),
-          const Text(
-            'Drag each word to its matching picture!',
-            style: TextStyle(fontSize: 18),
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Words to drag
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: items.map((item) {
-                    final matched = matches[item.word] != null;
-                    return Draggable<String>(
-                      data: item.word,
-                      feedback: _WordChip(word: item.word, dragging: true),
-                      childWhenDragging: Opacity(
-                        opacity: 0.3,
-                        child: _WordChip(word: item.word),
-                      ),
-                      child: matched
-                          ? const SizedBox(height: 40)
-                          : _WordChip(word: item.word),
-                    );
-                  }).toList(),
-                ),
-                // Images to drop on
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: items.map((item) {
-                    final matched = matches[item.word] == item.image;
-                    return DragTarget<String>(
-                      builder: (context, candidate, rejected) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: matched ? Colors.green : Colors.grey,
-                              width: 3,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Image.asset(
-                                item.image,
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
-                              ),
-                              if (matched)
-                                const Icon(
-                                  Icons.check_circle,
-                                  color: Colors.green,
-                                  size: 32,
-                                ),
-                            ],
-                          ),
-                        );
-                      },
-                      onWillAccept: (data) => data == item.word,
-                      onAccept: (data) {
-                        setState(() {
-                          matches[data] = item.image;
-                        });
-                        if (matches.length == items.length) {
-                          Future.delayed(const Duration(milliseconds: 500), () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                title: const Text('Great job!'),
-                                content: const Text(
-                                  'You matched all the words!',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('OK'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          });
-                        }
-                      },
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WordMatchItem {
-  final String word;
-  final String image;
-  const _WordMatchItem({required this.word, required this.image});
-}
-
-class _WordChip extends StatelessWidget {
-  final String word;
-  final bool dragging;
-  const _WordChip({required this.word, this.dragging = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: BoxDecoration(
-        color: dragging ? Colors.purple[200] : Colors.purple[100],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.purple, width: 2),
-      ),
-      child: Text(
-        word,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-}
-
-// --- Game 2: Story Sequence ---
-class StorySequenceGame extends StatefulWidget {
-  const StorySequenceGame({super.key});
-
-  @override
-  State<StorySequenceGame> createState() => _StorySequenceGameState();
-}
-
-class _StorySequenceGameState extends State<StorySequenceGame> {
-  final List<_SequenceItem> items = [
-    _SequenceItem(
-      text: 'The cat sat on the mat.',
-      image: 'assets/background/images/cat.png',
-    ),
-    _SequenceItem(
-      text: 'The dog barked.',
-      image: 'assets/background/images/dog.png',
-    ),
-    _SequenceItem(
-      text: 'The boy played.',
-      image: 'assets/background/images/boy.png',
-    ),
-    _SequenceItem(
-      text: 'The girl laughed.',
-      image: 'assets/background/images/girl.png',
-    ),
-  ];
-  late List<_SequenceItem> shuffled;
+class _GamesScreenState extends State<GamesScreen> {
+  final _assessRepo = AssessmentRepository();
+  final _storiesRepo = StoriesRepository();
+  late Future<List<Story>> _completedStoriesFuture;
 
   @override
   void initState() {
     super.initState();
-    shuffled = List<_SequenceItem>.from(items)..shuffle();
+    _completedStoriesFuture = _loadCompletedStories();
   }
 
-  bool get isCorrect {
-    for (int i = 0; i < items.length; i++) {
-      if (shuffled[i].text != items[i].text) return false;
-    }
-    return true;
+  Future<List<Story>> _loadCompletedStories() async {
+    final ids = await _assessRepo.getCompletedStoryIds();
+    if (ids.isEmpty) return [];
+    // Fetch story details for display
+    return _storiesRepo.listByIds(ids);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Story Sequence'),
-        backgroundColor: const Color(0xFF6C63FF),
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 24),
-          const Text(
-            'Tap to arrange the story in order!',
-            style: TextStyle(fontSize: 18),
+        backgroundColor: const Color(brandPurple),
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Assessments',
+          style: TextStyle(
+            fontFamily: 'RustyHooks',
+            fontWeight: FontWeight.w800,
+            letterSpacing: 2,
           ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: ReorderableListView(
-              onReorder: (oldIndex, newIndex) {
-                setState(() {
-                  if (newIndex > oldIndex) newIndex--;
-                  final item = shuffled.removeAt(oldIndex);
-                  shuffled.insert(newIndex, item);
-                });
-              },
-              children: [
-                for (final item in shuffled)
-                  ListTile(
-                    key: ValueKey(item.text),
-                    leading: Image.asset(item.image, width: 48, height: 48),
-                    title: Text(
-                      item.text,
-                      style: const TextStyle(fontSize: 17),
-                    ),
-                    tileColor: Colors.purple[50],
+        ),
+      ),
+      body: FutureBuilder<List<Story>>(
+        future: _completedStoriesFuture,
+        builder: (context, snap) {
+          if (snap.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final stories = snap.data ?? [];
+          if (stories.isEmpty) {
+            return _emptyState(context);
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: stories.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (_, i) {
+              final s = stories[i];
+              final cover = s.coverUrl ?? coverAssetForTitle(s.title);
+              final isNetwork =
+                  cover != null &&
+                  (cover.startsWith('http://') || cover.startsWith('https://'));
+              return Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 2,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => _openAssessment(context, s),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(14),
+                          bottomLeft: Radius.circular(14),
+                        ),
+                        child: SizedBox(
+                          width: 90,
+                          height: 90,
+                          child: isNetwork
+                              ? Image.network(cover, fit: BoxFit.cover)
+                              : Image.asset(
+                                  cover ?? 'assets/images/arts.png',
+                                  fit: BoxFit.cover,
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              s.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'OddlyCalming',
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Quick assessment based on this story',
+                              style: TextStyle(color: Colors.black54),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Padding(
+                        padding: EdgeInsets.only(right: 8),
+                        child: Icon(Icons.play_circle_fill, size: 32),
+                      ),
+                    ],
                   ),
-              ],
-            ),
-          ),
-          if (isCorrect)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Great job! You arranged the story.',
-                style: TextStyle(fontSize: 18, color: Colors.green),
-              ),
-            ),
-        ],
+                ),
+              );
+            },
+          );
+        },
       ),
+    );
+  }
+
+  Widget _emptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.videogame_asset_rounded, size: 56, color: Colors.grey),
+            SizedBox(height: 12),
+            Text(
+              'No assessments yet',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Finish reading a story to unlock a fun assessment here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openAssessment(BuildContext context, Story story) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => StoryAssessmentScreen(story: story)),
     );
   }
 }
 
-class _SequenceItem {
-  final String text;
-  final String image;
-  const _SequenceItem({required this.text, required this.image});
+class StoryAssessmentScreen extends StatefulWidget {
+  const StoryAssessmentScreen({super.key, required this.story});
+  final Story story;
+
+  @override
+  State<StoryAssessmentScreen> createState() => _StoryAssessmentScreenState();
+}
+
+class _StoryAssessmentScreenState extends State<StoryAssessmentScreen> {
+  int _score = 0;
+  int _current = 0;
+
+  late List<_Question> _questions;
+
+  @override
+  void initState() {
+    super.initState();
+    _questions = _generateQuestions(widget.story);
+  }
+
+  List<_Question> _generateQuestions(Story s) {
+    // Simple placeholder questions based on title words. Replace with real bank later.
+    final words = s.title
+        .split(RegExp(r"\s+"))
+        .where((w) => w.isNotEmpty)
+        .take(4)
+        .toList();
+    final qs = <_Question>[];
+    if (words.isNotEmpty) {
+      qs.add(
+        _Question(
+          prompt: 'Which word appears in the title?',
+          options: List<String>.from(words)
+            ..add('Banana')
+            ..shuffle(),
+          correct: words.first,
+        ),
+      );
+    }
+    if (words.length >= 2) {
+      qs.add(
+        _Question(
+          prompt: 'Tap the first word of the title',
+          options: List<String>.from(words)..shuffle(),
+          correct: words.first,
+        ),
+      );
+    }
+    // Add two generic questions
+    qs.addAll([
+      _Question(
+        prompt: 'Did you enjoy the story?',
+        options: const ['Yes', 'No', 'Maybe'],
+        correct: 'Yes',
+      ),
+      _Question(
+        prompt: 'Would you recommend it to a friend?',
+        options: const ['Yes', 'No'],
+        correct: 'Yes',
+      ),
+    ]);
+    return qs;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _questions[_current];
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(brandPurple),
+        foregroundColor: Colors.white,
+        title: Text('Assessment: ${widget.story.title}'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LinearProgressIndicator(
+              value: (_current + 1) / _questions.length,
+              backgroundColor: Colors.grey[300],
+              color: const Color(brandPurple),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      q.prompt,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'RustyHooks',
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    for (final opt in q.options)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: ElevatedButton(
+                          onPressed: () => _answer(opt == q.correct),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black87,
+                            side: BorderSide(color: Colors.grey.shade300),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Text(
+                              opt,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'OddlyCalming',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'Score: $_score',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _answer(bool correct) {
+    if (correct) _score++;
+    if (_current < _questions.length - 1) {
+      setState(() => _current++);
+    } else {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('Assessment complete!'),
+          content: Text('Your score: $_score / ${_questions.length}'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+}
+
+class _Question {
+  final String prompt;
+  final List<String> options;
+  final String correct;
+  _Question({
+    required this.prompt,
+    required this.options,
+    required this.correct,
+  });
 }

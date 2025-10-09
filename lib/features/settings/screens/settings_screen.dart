@@ -35,12 +35,12 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   child: const Center(
                     child: Text(
-                      'STORYTOTS',
+                      'storytots',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 2.0,
+                        fontSize: 18,
+                        fontFamily: 'Growback',
+                        letterSpacing: 1.5,
                       ),
                     ),
                   ),
@@ -60,6 +60,7 @@ class SettingsScreen extends StatelessWidget {
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 3,
+                    fontFamily: 'RustyHooks',
                   ),
                 ),
               ),
@@ -97,10 +98,11 @@ class SettingsScreen extends StatelessWidget {
                       width: double.infinity,
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: BorderSide(
+                            color: const Color(brandPurple),
+                            width: 2,
                           ),
-                          side: BorderSide(color: const Color(brandPurple), width: 2),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -108,6 +110,7 @@ class SettingsScreen extends StatelessWidget {
                           textStyle: const TextStyle(
                             fontWeight: FontWeight.w800,
                             letterSpacing: 2,
+                            fontFamily: 'RustyHooks',
                           ),
                         ),
                         onPressed: () => _logout(context),
@@ -127,9 +130,9 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _openProfile(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ProfileScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
   }
 
   void _comingSoon(BuildContext context, String feature) {
@@ -148,7 +151,9 @@ class SettingsScreen extends StatelessWidget {
       await Supabase.instance.client.auth.signOut();
 
       if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     } catch (error) {
       if (context.mounted) {
@@ -198,6 +203,7 @@ class _SettingsActionCard extends StatelessWidget {
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 2,
+                      fontFamily: 'RustyHooks',
                     ),
                   ),
                 ),

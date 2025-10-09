@@ -40,10 +40,29 @@ class _LibraryScreenState extends State<LibraryScreen>
         appBar: AppBar(
           backgroundColor: const Color(brandPurple),
           foregroundColor: Colors.white,
-          title: const Text('LIBRARY'),
-          bottom: const TabBar(
+          title: const Text(
+            'LIBRARY',
+            style: TextStyle(
+              fontFamily: 'RustyHooks',
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2,
+            ),
+          ),
+          bottom: TabBar(
             indicatorColor: Colors.white,
-            tabs: [
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            labelStyle: const TextStyle(
+              fontFamily: 'RustyHooks',
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.5,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontFamily: 'RustyHooks',
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.5,
+            ),
+            tabs: const [
               Tab(text: 'ALL'),
               Tab(text: 'FAVORITE'),
               Tab(text: 'HISTORY'),
@@ -60,7 +79,10 @@ class _LibraryScreenState extends State<LibraryScreen>
         body: Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset('assets/images/storytots_background.png', fit: BoxFit.cover),
+            Image.asset(
+              'assets/images/storytots_background.png',
+              fit: BoxFit.cover,
+            ),
             Container(color: Colors.white.withOpacity(0.94)),
             TabBarView(
               children: [
@@ -127,7 +149,9 @@ class _BookTile extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => StoryDetailsScreen(storyId: entry.storyId)),
+          MaterialPageRoute(
+            builder: (_) => StoryDetailsScreen(storyId: entry.storyId),
+          ),
         );
       },
       borderRadius: BorderRadius.circular(14),
@@ -139,14 +163,18 @@ class _BookTile extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
                 ],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(14),
                 child: _CoverImage(
                   networkUrl: entry.coverUrl, // full URL if available
-                  assetFallback: localAsset ?? 'assets/images/book_cover_placeholder.png',
+                  assetFallback: localAsset ?? 'assets/images/arts.png',
                 ),
               ),
             ),
@@ -157,7 +185,12 @@ class _BookTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'OddlyCalming',
+              height: 1.2,
+            ),
           ),
         ],
       ),
@@ -168,7 +201,10 @@ class _BookTile extends StatelessWidget {
 /// ---------------- HISTORY (grid with human-readable timestamp) ----------------
 
 class _HistoryGridFuture extends StatelessWidget {
-  const _HistoryGridFuture({required this.future, required this.onPullToRefresh});
+  const _HistoryGridFuture({
+    required this.future,
+    required this.onPullToRefresh,
+  });
   final Future<List<LibraryEntry>> future;
   final Future<void> Function() onPullToRefresh;
 
@@ -217,7 +253,9 @@ class _HistoryTile extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => StoryDetailsScreen(storyId: entry.storyId)),
+          MaterialPageRoute(
+            builder: (_) => StoryDetailsScreen(storyId: entry.storyId),
+          ),
         );
       },
       borderRadius: BorderRadius.circular(14),
@@ -231,14 +269,18 @@ class _HistoryTile extends StatelessWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: const [
-                      BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
                     ],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(14),
                     child: _CoverImage(
                       networkUrl: entry.coverUrl,
-                      assetFallback: localAsset ?? 'assets/images/book_cover_placeholder.png',
+                      assetFallback: localAsset ?? 'assets/images/arts.png',
                     ),
                   ),
                 ),
@@ -246,14 +288,21 @@ class _HistoryTile extends StatelessWidget {
                   right: 6,
                   top: 6,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.55),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       label,
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -266,7 +315,12 @@ class _HistoryTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'OddlyCalming',
+              height: 1.2,
+            ),
           ),
         ],
       ),
@@ -319,34 +373,5 @@ String _humanize(DateTime when) {
   if (diff.inMinutes < 1) return '${diff.inSeconds}s ago';
   if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
   if (diff.inHours < 24) return '${diff.inHours}h ago';
-
-  final startOfToday = DateTime(now.year, now.month, now.day);
-  final startOfYesterday = startOfToday.subtract(const Duration(days: 1));
-
-  if (when.isAfter(startOfToday)) {
-    return 'Today ${_formatHm(when)}';
-  } else if (when.isAfter(startOfYesterday)) {
-    return 'Yesterday ${_formatHm(when)}';
-  } else {
-    return _formatDateTime(when);
-  }
-}
-
-String _formatHm(DateTime dt) {
-  var h = dt.hour % 12;
-  if (h == 0) h = 12;
-  final m = dt.minute.toString().padLeft(2, '0');
-  final ampm = dt.hour < 12 ? 'AM' : 'PM';
-  return '$h:$m $ampm';
-}
-
-String _formatDateTime(DateTime dt) {
-  const months = [
-    'Jan','Feb','Mar','Apr','May','Jun',
-    'Jul','Aug','Sep','Oct','Nov','Dec'
-  ];
-  final month = months[dt.month - 1];
-  final day = dt.day;
-  final year = dt.year;
-  return '$month $day, $year ${_formatHm(dt)}';
+  return '${diff.inDays}d ago';
 }
