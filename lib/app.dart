@@ -9,12 +9,16 @@ import 'features/interests/screens/onboarding_flow.dart';
 import 'features/shell/main_tabs.dart';
 import 'features/games/games_screen.dart';
 import 'core/widgets/global_click_sound.dart';
+import 'core/services/background_music_service.dart';
 
 class StoryTotsApp extends StatelessWidget {
   const StoryTotsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Fire-and-forget start of background music
+    BackgroundMusicService.instance.start();
+
     return GlobalClickSound(
       child: MaterialApp(
         title: 'StoryTots',

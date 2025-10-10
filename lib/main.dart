@@ -5,6 +5,7 @@ import 'core/constants.dart';
 import 'data/repositories/auth_cache_repository.dart';
 import 'app.dart';
 import 'core/services/sound_service.dart';
+import 'core/services/background_music_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,9 @@ Future<void> main() async {
 
   // Prepare global click sound
   await SoundService.instance.init();
+
+  // Prepare background music (does not start here)
+  await BackgroundMusicService.instance.init(volume: 0.35);
 
   runApp(const StoryTotsApp());
 }

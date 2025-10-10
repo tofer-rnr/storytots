@@ -102,6 +102,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Live stream of the current user's avatar key so the UI updates immediately
+  Stream<String?> _avatarKeyStream() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      return const Stream<String?>.empty();
+    }
+    return Supabase.instance.client
+        .from('profiles')
+        .stream(primaryKey: ['id'])
+        .eq('id', user.id)
+        .map((rows) => rows.isNotEmpty ? (rows.first['avatar_key'] as String?) : null);
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>?>(
@@ -139,10 +152,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 actions: [
                   Padding(
                     padding: const EdgeInsets.only(right: 12),
-                    child: CircleAvatar(
-                      radius: 16,
-                      backgroundImage: AssetImage(avatarPath),
-                      onBackgroundImageError: (_, __) {},
+                    child: StreamBuilder<String?>(
+                      stream: _avatarKeyStream(),
+                      builder: (context, avatarSnap) {
+                        final key = avatarSnap.data;
+                        final dynamicPath =
+                            key != null ? _avatarAssetFromKey(key) : avatarPath;
+                        return CircleAvatar(
+                          radius: 16,
+                          backgroundImage: AssetImage(dynamicPath),
+                          onBackgroundImageError: (_, __) {},
+                        );
+                      },
                     ),
                   ),
                 ],

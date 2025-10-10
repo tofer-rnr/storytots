@@ -17,6 +17,10 @@ class GlobalClickSound extends StatefulWidget {
 class _GlobalClickSoundState extends State<GlobalClickSound> {
   final Map<int, _TapInfo> _downs = {};
 
+  // Make tap recognition more forgiving so slow taps also trigger
+  static const Duration _maxTapDuration = Duration(milliseconds: 500);
+  static const double _maxMoveDistance = 18; // logical pixels
+
   void _handle(PointerEvent e) {
     if (e is PointerDownEvent) {
       _downs[e.pointer] = _TapInfo(e.position, e.timeStamp);
@@ -25,8 +29,8 @@ class _GlobalClickSoundState extends State<GlobalClickSound> {
       if (info == null) return;
       final dt = e.timeStamp - info.time;
       final moved = (e.position - info.position).distance;
-      // Treat as a tap if it's quick and didn't move much (avoids scrolls/drags)
-      if (dt <= const Duration(milliseconds: 250) && moved <= 10) {
+      // Treat as a tap if it's reasonably quick and didn't move much (avoids scrolls/drags)
+      if (dt <= _maxTapDuration && moved <= _maxMoveDistance) {
         SoundService.instance.playClick();
       }
     } else if (e is PointerCancelEvent) {

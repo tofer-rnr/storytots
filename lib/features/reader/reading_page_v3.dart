@@ -15,6 +15,7 @@ import 'speech/speech_service_factory.dart';
 import '../../data/repositories/library_repository.dart';
 import '../../data/repositories/progress_repository.dart';
 import '../../data/repositories/assessment_repository.dart';
+import '../../core/services/background_music_service.dart';
 
 class ReadingPageV3 extends StatefulWidget {
   const ReadingPageV3({
@@ -134,6 +135,9 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       _sessionLang = current;
       _langStartedAt = DateTime.now();
     });
+
+    // Suspend background music while reading
+    BackgroundMusicService.instance.suspend();
   }
 
   void _finishLanguageSegment() {
@@ -166,6 +170,9 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
 
     // Try to flush pending progress when the reader closes
     _progressRepo.flushPendingProgress();
+
+    // Resume background music when leaving reading page
+    BackgroundMusicService.instance.resumeFromSuspend();
 
     super.dispose();
   }

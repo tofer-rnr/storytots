@@ -26,6 +26,7 @@ dependencies:
   http: ^1.2.0
   shared_preferences: ^2.3.2
   audioplayers: ^5.2.1
+  soundpool: ^2.4.1
 
 dev_dependencies:
   flutter_test:
@@ -60,15 +61,12 @@ flutter:
     - assets/stories/_normalized_stories/The_Legend_of_the_Rainbow/en/pages/
     - assets/stories/_normalized_stories/The_Legend_of_the_Rainbow/en/
     - assets/stories/_normalized_stories/The_Legend_of_the_Rainbow/tl/pages/
-    - assets/stories/_normalized_stories/The_Legend_of_the_Rainbow/tl/
     - assets/stories/_normalized_stories/The_Lion_and_the_Mouse/en/pages/
     - assets/stories/_normalized_stories/The_Lion_and_the_Mouse/en/
     - assets/stories/_normalized_stories/The_Lion_and_the_Mouse/tl/pages/
-    - assets/stories/_normalized_stories/The_Lion_and_the_Mouse/tl/
     - assets/stories/_normalized_stories/The_Ant_and_the_Grasshopper/en/pages/
     - assets/stories/_normalized_stories/The_Ant_and_the_Grasshopper/en/
     - assets/stories/_normalized_stories/The_Ant_and_the_Grasshopper/tl/pages/
-    - assets/stories/_normalized_stories/The_Ant_and_the_Grasshopper/tl/
     - assets/stories/_normalized_stories/Why_the_Ocean_Is_Salty/en/pages/
     - assets/stories/_normalized_stories/Why_the_Ocean_Is_Salty/en/
     - assets/stories/_normalized_stories/Why_the_Ocean_Is_Salty/tl/pages/
@@ -80,7 +78,6 @@ flutter:
     - assets/stories/_normalized_stories/The_Carabao_and_the_Shell/en/pages/
     - assets/stories/_normalized_stories/The_Carabao_and_the_Shell/en/
     - assets/stories/_normalized_stories/The_Carabao_and_the_Shell/tl/pages/
-    - assets/stories/_normalized_stories/The_Carabao_and_the_Shell/tl/
     - assets/stories/_normalized_stories/Stories_of_Juan_Tamad/en/pages/
     - assets/stories/_normalized_stories/Stories_of_Juan_Tamad/en/
     - assets/stories/_normalized_stories/Stories_of_Juan_Tamad/tl/pages/

@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:storytots/data/repositories/auth_cache_repository.dart';
 import 'package:storytots/core/constants.dart';
 import 'package:storytots/features/settings/screens/profile_screen.dart';
+import 'about_screen.dart';
+import 'help_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -84,12 +86,18 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: 14),
                     _SettingsActionCard(
                       label: 'ABOUT',
-                      onTap: () => _comingSoon(context, 'About'),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AboutScreen()),
+                      ),
                     ),
                     const SizedBox(height: 14),
                     _SettingsActionCard(
                       label: 'HELP',
-                      onTap: () => _comingSoon(context, 'Help'),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HelpScreen()),
+                      ),
                     ),
                     const SizedBox(height: 22),
 
