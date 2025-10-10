@@ -8,10 +8,10 @@ class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
 
   @override
-  State<LibraryScreen> createState() => _LibraryScreenState();
+  State<LibraryScreen> createState() => LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen>
+class LibraryScreenState extends State<LibraryScreen>
     with SingleTickerProviderStateMixin {
   final _repo = LibraryRepository();
 
@@ -24,6 +24,9 @@ class _LibraryScreenState extends State<LibraryScreen>
     super.initState();
     _refresh();
   }
+
+  // Expose so parent (MainTabs) can trigger refresh when switching to Library tab
+  Future<void> refresh() => _refresh();
 
   Future<void> _refresh() async {
     _fAll = _repo.listAll();
@@ -128,7 +131,8 @@ class _GridFuture extends StatelessWidget {
               crossAxisSpacing: 12,
             ),
             itemCount: items.length,
-            itemBuilder: (context, i) => _BookTile(entry: items[i]),
+            itemBuilder: (context, i) =>
+                _BookTile(entry: items[i], onReturned: onPullToRefresh),
           ),
         );
       },
@@ -137,8 +141,9 @@ class _GridFuture extends StatelessWidget {
 }
 
 class _BookTile extends StatelessWidget {
-  const _BookTile({required this.entry});
+  const _BookTile({required this.entry, required this.onReturned});
   final LibraryEntry entry;
+  final Future<void> Function() onReturned;
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +157,7 @@ class _BookTile extends StatelessWidget {
           MaterialPageRoute(
             builder: (_) => StoryDetailsScreen(storyId: entry.storyId),
           ),
-        );
+        ).then((_) => onReturned());
       },
       borderRadius: BorderRadius.circular(14),
       child: Column(

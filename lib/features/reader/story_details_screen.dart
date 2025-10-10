@@ -252,7 +252,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                         );
                                       } catch (_) {}
 
-                                      // Try to load story content from assets
+                                      // Load ENGLISH content by default
                                       String text =
                                           "Let's read ${story.title}.";
                                       bool contentLoaded = false;
@@ -261,101 +261,75 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                         final storySlug = _slugifyTitle(
                                           story.title,
                                         );
-                                        final language =
-                                            story.language.toLowerCase() == 'tl'
-                                            ? 'tl'
-                                            : 'en';
 
-                                        // Attempt direct load
+                                        // Try English directly
                                         try {
                                           text =
                                               await StoryAssetService.loadPageContent(
                                                 slug: storySlug,
-                                                language: language,
+                                                language: 'en',
                                               );
                                           contentLoaded = true;
-                                        } catch (directError) {
-                                          // Search index
-                                          bool foundInAssets = false;
+                                        } catch (_) {
+                                          // Try via index
                                           for (var item in StoriesIndex.items) {
                                             final matchesSlug =
                                                 item.slug == storySlug ||
                                                 _slugifyTitle(item.title) ==
                                                     storySlug;
-                                            final matchesTitle = item.title
-                                                .toLowerCase()
-                                                .contains(
-                                                  story.title.toLowerCase(),
-                                                );
-                                            if ((matchesSlug || matchesTitle) &&
-                                                item.language == language) {
+                                            if (matchesSlug &&
+                                                item.language == 'en') {
                                               try {
                                                 text =
                                                     await StoryAssetService.loadPageContent(
                                                       slug: item.slug,
-                                                      language: language,
+                                                      language: 'en',
                                                     );
-                                                foundInAssets = true;
                                                 contentLoaded = true;
                                                 break;
-                                              } catch (_) {
-                                                foundInAssets = false;
-                                              }
+                                              } catch (_) {}
                                             }
                                           }
+                                        }
 
-                                          if (!foundInAssets) {
-                                            // Fallbacks
-                                            if (StoryContent.hasContent(
-                                              story.id,
-                                            )) {
-                                              final pages =
-                                                  StoryContent.getPagesById(
-                                                    story.id,
-                                                  );
-                                              if (pages != null &&
-                                                  pages.isNotEmpty) {
-                                                text = pages.first;
-                                                contentLoaded = true;
-                                              } else {
-                                                final content =
-                                                    StoryContent.getContentById(
-                                                      story.id,
-                                                    );
-                                                if (content != null) {
-                                                  text = content;
-                                                  contentLoaded = true;
-                                                }
-                                              }
-                                            }
-
-                                            if (!contentLoaded &&
-                                                (story.synopsis?.isNotEmpty ==
-                                                    true)) {
-                                              text = story.synopsis!;
+                                        // Fallbacks
+                                        if (!contentLoaded &&
+                                            StoryContent.hasContent(story.id)) {
+                                          final pages =
+                                              StoryContent.getPagesById(
+                                                story.id,
+                                              );
+                                          if (pages != null &&
+                                              pages.isNotEmpty) {
+                                            text = pages.first;
+                                            contentLoaded = true;
+                                          } else {
+                                            final content =
+                                                StoryContent.getContentById(
+                                                  story.id,
+                                                );
+                                            if (content != null) {
+                                              text = content;
                                               contentLoaded = true;
                                             }
                                           }
                                         }
-                                      } catch (e) {
+
                                         if (!contentLoaded &&
                                             (story.synopsis?.isNotEmpty ==
                                                 true)) {
                                           text = story.synopsis!;
+                                          contentLoaded = true;
                                         }
-                                      }
+                                      } catch (_) {}
 
-                                      if (text ==
-                                          "Let's read ${story.title}.") {
-                                        // still default
-                                      }
-
-                                      // Use reading page for all stories
                                       await Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => ReadingPageV3(
                                             pageText: text,
+                                            pageTextEn:
+                                                text, // mark as English for TTS
                                             storyId: story.id,
                                             storyTitle: story.title,
                                             coverUrl:
@@ -372,7 +346,92 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              _roundIconButton(Icons.add, onTap: () {}),
+                              // New Filipino button opens Tagalog page
+                              Expanded(
+                                child: SizedBox(
+                                  height: 44,
+                                  child: OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(
+                                        color: Color(brandPurple),
+                                        width: 2,
+                                      ),
+                                      foregroundColor: const Color(brandPurple),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    onPressed: () async {
+                                      String? textTl;
+                                      try {
+                                        final slug = _slugifyTitle(story.title);
+                                        // Try direct TL
+                                        try {
+                                          textTl =
+                                              await StoryAssetService.loadPageContent(
+                                                slug: slug,
+                                                language: 'tl',
+                                              );
+                                        } catch (_) {
+                                          // Try via index lookup
+                                          for (final item
+                                              in StoriesIndex.items) {
+                                            final matches =
+                                                item.slug == slug ||
+                                                _slugifyTitle(item.title) ==
+                                                    slug;
+                                            if (matches &&
+                                                item.language == 'tl') {
+                                              try {
+                                                textTl =
+                                                    await StoryAssetService.loadPageContent(
+                                                      slug: item.slug,
+                                                      language: 'tl',
+                                                    );
+                                                break;
+                                              } catch (_) {}
+                                            }
+                                          }
+                                        }
+                                      } catch (_) {}
+
+                                      if (textTl == null ||
+                                          textTl.trim().isEmpty) {
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Tagalog version is not available yet.',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ReadingPageV3(
+                                            pageText: textTl!,
+                                            pageTextTl:
+                                                textTl, // mark as Filipino for TTS
+                                            storyId: story.id,
+                                            storyTitle: story.title,
+                                            coverUrl:
+                                                story.coverUrl ??
+                                                coverAssetForTitle(story.title),
+                                            speechServiceType:
+                                                SpeechServiceType.deviceSTT,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text('Filipino'),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 20),

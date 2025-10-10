@@ -85,14 +85,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openReader({String? topic}) {
-    final sample = (topic == null)
-        ? "Kapag nakita ni Luna ang maliwanag na buwan, bumulong siya ng 'hello' at ngumiti."
-        : "Basahin natin tungkol sa $topic. Dahan-dahan nating basahin ang bawat salita.";
+    final sampleEn = "Once upon a time, there was a green garden.";
+    final sampleTl = "Noong unang panahon, may isang luntiang hardin.";
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ReadingPageV3(
-          pageText: sample,
+          pageText: sampleEn,
+          pageTextEn: sampleEn,
+          pageTextTl: sampleTl,
           storyId: 'demo',
           storyTitle: topic ?? 'Demo Story',
           coverUrl: '',
@@ -112,7 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
         .from('profiles')
         .stream(primaryKey: ['id'])
         .eq('id', user.id)
-        .map((rows) => rows.isNotEmpty ? (rows.first['avatar_key'] as String?) : null);
+        .map(
+          (rows) =>
+              rows.isNotEmpty ? (rows.first['avatar_key'] as String?) : null,
+        );
   }
 
   @override
@@ -156,8 +160,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       stream: _avatarKeyStream(),
                       builder: (context, avatarSnap) {
                         final key = avatarSnap.data;
-                        final dynamicPath =
-                            key != null ? _avatarAssetFromKey(key) : avatarPath;
+                        final dynamicPath = key != null
+                            ? _avatarAssetFromKey(key)
+                            : avatarPath;
                         return CircleAvatar(
                           radius: 16,
                           backgroundImage: AssetImage(dynamicPath),

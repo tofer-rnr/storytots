@@ -27,8 +27,9 @@ Future<void> main() async {
   // Prepare global click sound
   await SoundService.instance.init();
 
-  // Prepare background music (does not start here)
+  // Prepare background music and start playing softly
   await BackgroundMusicService.instance.init(volume: 0.35);
+  await BackgroundMusicService.instance.start();
 
   runApp(const StoryTotsApp());
 }

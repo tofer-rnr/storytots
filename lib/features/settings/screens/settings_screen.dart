@@ -5,6 +5,7 @@ import 'package:storytots/core/constants.dart';
 import 'package:storytots/features/settings/screens/profile_screen.dart';
 import 'about_screen.dart';
 import 'help_screen.dart';
+import 'sound_settings_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -77,6 +78,16 @@ class SettingsScreen extends StatelessWidget {
                     _SettingsActionCard(
                       label: 'PROFILE',
                       onTap: () => _openProfile(context),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionCard(
+                      label: 'SOUND',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SoundSettingsScreen(),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 14),
                     _SettingsActionCard(

@@ -27,7 +27,7 @@ class ReadingPageV3 extends StatefulWidget {
     this.storyId,
     this.storyTitle,
     this.coverUrl,
-    // Optional localized texts (provide both to enable the toggle)
+    // Optional localized texts (pass only one to select language implicitly)
     this.pageTextEn,
     this.pageTextTl,
   });
@@ -87,8 +87,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
   Map<String, String> _mispronunciationFeedback = {};
   List<String> _currentSentenceMistakes = [];
 
-  // Track selected language for toggle; values: 'auto' (default), 'en', 'tl'
-  String _selectedLang = 'auto';
+  // Language selection (implicit): 'English', 'Filipino', or 'Auto'
   String _lang = 'Auto';
 
   // Reading activity tracking
@@ -101,12 +100,22 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     super.initState();
     _speechService = SpeechServiceFactory.create(widget.speechServiceType);
 
-    // Choose initial text: prefer explicit localized fields when available
+    // Choose initial text and implicit language
     final initialText =
         widget.pageTextEn ?? widget.pageTextTl ?? widget.pageText;
-    if (widget.pageTextEn != null && widget.pageTextTl != null) {
-      // When both provided, default to English but mark toggle available
-      _selectedLang = widget.pageTextEn == initialText ? 'en' : 'tl';
+
+    if (widget.pageTextTl != null && widget.pageTextEn == null) {
+      // Only Tagalog provided => force Filipino mode
+      _lang = 'Filipino';
+      _sessionLang = 'tl';
+    } else if (widget.pageTextEn != null) {
+      // English explicitly provided (default)
+      _lang = 'English';
+      _sessionLang = 'en';
+    } else {
+      // Fallback to auto
+      _lang = 'Auto';
+      _sessionLang = null;
     }
 
     _prepareSentences(initialText);
@@ -126,14 +135,11 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       }
     });
 
-    // Initialize language session start once initial text/lang is resolved in _prepare
-    // Schedule after first frame to ensure _selectedLang has been inferred.
+    // Mark language session start once initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final current = (_selectedLang == 'en' || _selectedLang == 'tl')
-          ? _selectedLang
-          : null; // ignore 'auto'
-      _sessionLang = current;
-      _langStartedAt = DateTime.now();
+      if (_sessionLang == 'en' || _sessionLang == 'tl') {
+        _langStartedAt = DateTime.now();
+      }
     });
 
     // Suspend background music while reading
@@ -847,7 +853,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
           ),
         ),
         actions: [
-          // Favorite button (kept first so language toggle sits beside it)
+          // Favorite button
           if (widget.storyId != null)
             IconButton(
               icon: Icon(
@@ -855,56 +861,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
               ),
               onPressed: _toggleFavorite,
             ),
-
-          // Language toggle shown only when both localized texts are provided
-          if (widget.pageTextEn != null && widget.pageTextTl != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: PopupMenuButton<String>(
-                tooltip: 'Select language',
-                onSelected: (value) {
-                  // finalize previous segment before switching
-                  _finishLanguageSegment();
-                  if (!mounted) return;
-                  setState(() {
-                    if (value == 'en') {
-                      _selectedLang = 'en';
-                      _lang = 'English';
-                      final text = widget.pageTextEn ?? widget.pageText;
-                      _prepareSentences(text);
-                      _sessionLang = 'en';
-                      _langStartedAt = DateTime.now();
-                    } else if (value == 'tl') {
-                      _selectedLang = 'tl';
-                      _lang = 'Filipino';
-                      final text = widget.pageTextTl ?? widget.pageText;
-                      _prepareSentences(text);
-                      _sessionLang = 'tl';
-                      _langStartedAt = DateTime.now();
-                    } else {
-                      _selectedLang = 'auto';
-                      _lang = 'Auto';
-                      // In auto mode we don't attribute time to a single language
-                      _sessionLang = null;
-                      _langStartedAt = DateTime.now();
-                    }
-                  });
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'en', child: Text('English')),
-                  const PopupMenuItem(value: 'tl', child: Text('Filipino')),
-                  const PopupMenuItem(value: 'auto', child: Text('Auto')),
-                ],
-                child: Row(
-                  children: [
-                    const Icon(Icons.translate),
-                    const SizedBox(width: 6),
-                    Text(_lang),
-                    const Icon(Icons.arrow_drop_down),
-                  ],
-                ),
-              ),
-            ),
+          // ... no language toggle; language is chosen implicitly based on the text provided ...
         ],
       ),
       body: Stack(

@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Plays looped background music across the whole app, with the ability
 /// to temporarily suspend it (e.g., while reading a story) and resume later.
@@ -11,6 +12,7 @@ class BackgroundMusicService {
   bool _initialized = false;
   bool _isPlaying = false;
   double _volume = 0.35; // default gentle volume
+  static const _prefsKey = 'bgmVolume';
 
   // Suspension handling so multiple pages can request silence safely
   int _suspendCount = 0;
@@ -19,6 +21,12 @@ class BackgroundMusicService {
   Future<void> init({double? volume}) async {
     if (_initialized) return;
     if (volume != null) _volume = volume.clamp(0.0, 1.0);
+
+    // Load persisted volume if available
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _volume = (prefs.getDouble(_prefsKey) ?? _volume).clamp(0.0, 1.0);
+    } catch (_) {}
 
     await _player.setReleaseMode(ReleaseMode.loop);
     await _player.setVolume(_volume);
@@ -30,15 +38,18 @@ class BackgroundMusicService {
     }
   }
 
+  double get currentVolume => _volume;
+  bool get isPlaying => _isPlaying;
+
   Future<void> start() async {
     if (!_initialized) {
       await init();
-      if (!_initialized) return; // bail if asset missing
+      if (!_initialized) return;
     }
     if (_suspendCount > 0) return; // respect active suspension
     if (_isPlaying) return;
     try {
-      await _player.resume(); // resume is faster if already prepared
+      await _player.resume();
       _isPlaying = true;
     } catch (_) {
       try {
@@ -66,6 +77,8 @@ class BackgroundMusicService {
     _volume = v.clamp(0.0, 1.0);
     try {
       await _player.setVolume(_volume);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_prefsKey, _volume);
     } catch (_) {}
   }
 
@@ -74,7 +87,8 @@ class BackgroundMusicService {
     if (_suspendCount == 0) {
       _wasPlayingBeforeSuspend = _isPlaying;
       if (_isPlaying) {
-        await pause();
+        // Force-stop instead of pause to ensure silence in release APKs
+        await stop();
       }
     }
     _suspendCount++;

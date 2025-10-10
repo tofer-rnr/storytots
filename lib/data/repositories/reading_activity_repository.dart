@@ -21,6 +21,7 @@ class ReadingActivityRepository {
   static const _queueKey = 'reading_activity_queue';
   static const _aggPrefix = 'reading_minutes:'; // reading_minutes:YYYY-MM-DD:en
   static const int dailyGoalMinutes = 60; // can be adjusted later
+  static const _lastSessionKey = 'reading_last_session_at';
 
   Future<SharedPreferences> get _prefs async => SharedPreferences.getInstance();
 
@@ -66,6 +67,9 @@ class ReadingActivityRepository {
     final aggKey = '$_aggPrefix$day:$language';
     final current = prefs.getInt(aggKey) ?? 0;
     await prefs.setInt(aggKey, current + seconds);
+
+    // Record last session end time for Profile metrics
+    await prefs.setString(_lastSessionKey, item['ended_at'] as String);
   }
 
   Future<LanguageStats> getTodayLanguageStats() async {

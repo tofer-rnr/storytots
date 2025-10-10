@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:storytots/core/constants.dart';
 import 'package:storytots/data/repositories/reading_activity_repository.dart';
+import 'package:storytots/data/services/profile_stats_service.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -16,12 +17,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late Future<_ProfileData> _future;
   final _activityRepo = ReadingActivityRepository();
   LanguageStats? _today;
+  ProfileStats? _stats;
 
   @override
   void initState() {
     super.initState();
     _future = _loadProfile();
     _loadActivity();
+    _loadStats();
   }
 
   Future<_ProfileData> _loadProfile() async {
@@ -58,9 +61,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _today = stats);
   }
 
+  Future<void> _loadStats() async {
+    final s = await ProfileStatsService().getStats();
+    if (!mounted) return;
+    setState(() => _stats = s);
+  }
+
   void _refresh() {
     setState(() => _future = _loadProfile());
     _loadActivity();
+    _loadStats();
   }
 
   @override
@@ -93,6 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           }
           final p = snap.data!;
+          final stats = _stats; // may be null on first frame
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -221,19 +232,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Language progress (English/Filipino)
+                    // Language progress (today)
                     Row(
                       children: [
                         Expanded(
                           child: _pillStat(
-                            'English',
+                            'English (today)',
                             _fmtMinutes(_today?.englishMinutes ?? 0),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: _pillStat(
-                            'Filipino',
+                            'Filipino (today)',
                             _fmtMinutes(_today?.filipinoMinutes ?? 0),
                           ),
                         ),
@@ -242,12 +253,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Activity Report
+                    // Reading Metrics summary
+                    if (stats != null)
+                      _metricsSummary(stats)
+                    else
+                      _skeletonMetrics(),
+
+                    const SizedBox(height: 12),
+
+                    // Weekly bars and EN/TL split
+                    if (stats != null) _weeklySection(stats),
+
+                    const SizedBox(height: 12),
+
+                    // Activity Report (still uses today percent)
                     _activityCard((_today?.activityPercent ?? 0.0)),
 
                     const SizedBox(height: 12),
 
-                    // Time Spent
+                    // Time Spent (reading today)
                     _timeSpent(game: 0, reading: _today?.totalMinutes ?? 0),
 
                     const SizedBox(height: 12),
@@ -261,6 +285,218 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       ),
     );
+  }
+
+  Widget _metricsSummary(ProfileStats s) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'READING METRICS',
+            style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.5),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _miniStat(
+                Icons.timer,
+                'All-time',
+                _fmtMinutes(s.totalMinutesAllTime),
+              ),
+              _miniStat(
+                Icons.update,
+                'Last 7 days',
+                _fmtMinutes(s.totalMinutes7d),
+              ),
+              _miniStat(Icons.language, 'EN 7d', _fmtMinutes(s.enMinutes7d)),
+              _miniStat(Icons.translate, 'TL 7d', _fmtMinutes(s.tlMinutes7d)),
+              _miniStat(
+                Icons.check_circle,
+                'Completed',
+                s.storiesCompleted.toString(),
+              ),
+              _miniStat(
+                Icons.text_fields,
+                'Sentences',
+                s.sentencesPracticed.toString(),
+              ),
+              _miniStat(
+                Icons.local_fire_department,
+                'Streak',
+                '${s.streakDays} days',
+              ),
+              _miniStat(
+                Icons.access_time,
+                'Last session',
+                _fmtLast(s.lastSessionAt),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _skeletonMetrics() {
+    return Container(
+      height: 92,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          const CircularProgressIndicator(strokeWidth: 3),
+          const SizedBox(width: 12),
+          Expanded(child: Container(height: 16, color: Colors.black12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _weeklySection(ProfileStats s) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'LAST 7 DAYS',
+            style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.5),
+          ),
+          const SizedBox(height: 8),
+          _weeklyBars(s.weekly),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _chipCard(
+                  Icons.language,
+                  'EN (7d)',
+                  _fmtMinutes(s.enMinutes7d),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _chipCard(
+                  Icons.translate,
+                  'TL (7d)',
+                  _fmtMinutes(s.tlMinutes7d),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _weeklyBars(List<DayStat> days) {
+    final maxMin = days
+        .map((d) => d.totalMinutes)
+        .fold<int>(0, (a, b) => a > b ? a : b);
+    final labels = const ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    return SizedBox(
+      height: 110,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (int i = 0; i < days.length; i++) ...[
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Container(
+                        width: 14,
+                        height: maxMin == 0
+                            ? 4
+                            : (days[i].totalMinutes / maxMin) * 80 + 4,
+                        decoration: BoxDecoration(
+                          color: const Color(brandPurple),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    labels[i],
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+            if (i != days.length - 1) const SizedBox(width: 6),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static Widget _miniStat(IconData icon, String title, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(.04),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: Colors.black54),
+          const SizedBox(width: 6),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(width: 6),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+
+  static String _fmtMinutes(int mins) {
+    if (mins < 60) return '${mins}m';
+    final h = mins ~/ 60;
+    final m = mins % 60;
+    return '${h}h ${m}m';
+  }
+
+  static String _fmtLast(DateTime? dt) {
+    if (dt == null) return '—';
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 
   // --- helpers --------------------------------------------------------------
@@ -497,13 +733,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
-  }
-
-  static String _fmtMinutes(int mins) {
-    if (mins < 60) return '${mins}m';
-    final h = mins ~/ 60;
-    final m = mins % 60;
-    return '${h}h ${m}m';
   }
 
   static Widget _chipCard(IconData icon, String title, String subtitle) {

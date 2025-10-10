@@ -18,11 +18,13 @@ class _MainTabsState extends State<MainTabs> {
   static const _lastTabKey = 'last_selected_tab_index';
   int _index = 0;
 
-  final _pages = const [
-    HomeScreen(),
-    GamesScreen(),
-    LibraryScreen(),
-    SettingsScreen(),
+  final _libraryKey = GlobalKey<LibraryScreenState>();
+
+  late final List<Widget> _pages = [
+    const HomeScreen(),
+    const GamesScreen(),
+    LibraryScreen(key: _libraryKey),
+    const SettingsScreen(),
   ];
 
   @override
@@ -42,6 +44,11 @@ class _MainTabsState extends State<MainTabs> {
     setState(() => _index = i);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_lastTabKey, i);
+
+    // If switching to Library tab, refresh its content (including Favorites)
+    if (i == 2) {
+      _libraryKey.currentState?.refresh();
+    }
   }
 
   @override

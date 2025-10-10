@@ -16,13 +16,14 @@ class LibraryEntry {
   });
 
   factory LibraryEntry.fromMap(Map<String, dynamic> m) => LibraryEntry(
-        storyId: m['story_id'] as String,
-        storyTitle: m['story_title'] as String?,
-        coverUrl: m['cover_url'] as String?,
-        isFavorite: (m['is_favorite'] as bool?) ?? false,
-        lastOpened:
-            m['last_opened'] != null ? DateTime.parse(m['last_opened'] as String) : null,
-      );
+    storyId: m['story_id'] as String,
+    storyTitle: m['story_title'] as String?,
+    coverUrl: m['cover_url'] as String?,
+    isFavorite: (m['is_favorite'] as bool?) ?? false,
+    lastOpened: m['last_opened'] != null
+        ? DateTime.parse(m['last_opened'] as String)
+        : null,
+  );
 }
 
 class LibraryRepository {
@@ -72,8 +73,9 @@ class LibraryRepository {
         .eq('user_id', uid)
         .eq('story_id', storyId)
         .limit(1);
-    if (rows is List && rows.isNotEmpty) {
-      return LibraryEntry.fromMap(rows.first as Map<String, dynamic>);
+    final list = rows as List;
+    if (list.isNotEmpty) {
+      return LibraryEntry.fromMap(list.first);
     }
     return null;
   }
