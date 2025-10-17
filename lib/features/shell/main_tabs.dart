@@ -9,7 +9,8 @@ import 'package:storytots/features/settings/screens/settings_screen.dart';
 import 'package:storytots/features/games/games_screen.dart';
 
 class MainTabs extends StatefulWidget {
-  const MainTabs({super.key});
+  const MainTabs({super.key, this.initialIndex});
+  final int? initialIndex;
   @override
   State<MainTabs> createState() => _MainTabsState();
 }
@@ -30,7 +31,16 @@ class _MainTabsState extends State<MainTabs> {
   @override
   void initState() {
     super.initState();
-    _restoreLastTab();
+    // If an explicit tab is requested, use it; otherwise restore last tab.
+    if (widget.initialIndex != null) {
+      _index = widget.initialIndex!.clamp(0, _pages.length - 1);
+      // Persist selection so returning to app keeps this tab by default
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setInt(_lastTabKey, _index);
+      });
+    } else {
+      _restoreLastTab();
+    }
   }
 
   Future<void> _restoreLastTab() async {

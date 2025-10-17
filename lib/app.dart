@@ -7,10 +7,13 @@ import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/signup_screen.dart';
 import 'features/auth/screens/otp_email_screen.dart';
 import 'features/auth/screens/verify_email_screen.dart';
+import 'features/auth/screens/forgot_password_request_screen.dart';
+import 'features/auth/screens/forgot_password_update_screen.dart';
 import 'features/interests/screens/onboarding_flow.dart';
 import 'features/shell/main_tabs.dart';
 import 'features/games/games_screen.dart';
 import 'core/widgets/global_click_sound.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StoryTotsApp extends StatelessWidget {
   const StoryTotsApp({super.key});
@@ -27,7 +30,6 @@ class StoryTotsApp extends StatelessWidget {
             seedColor: const Color(brandPurple),
           ),
           scaffoldBackgroundColor: const Color(appBg),
-          // Keep default font family. We will apply custom fonts to specific widgets.
         ),
         initialRoute: '/',
         routes: {
@@ -35,8 +37,10 @@ class StoryTotsApp extends StatelessWidget {
           '/login': (_) => const LoginScreen(),
           '/signup': (_) => const SignUpScreen(),
           '/otp': (_) => const OtpEmailScreen(),
+          '/forgot-password': (_) => const ForgotPasswordRequestScreen(),
+          '/reset-password': (_) => const ForgotPasswordUpdateScreen(),
           '/onboarding': (_) => const OnboardingFlow(),
-          '/home': (_) => const MainTabs(),
+          // Use onGenerateRoute for '/home' to support arguments
           '/games': (_) => const GamesScreen(),
         },
         onGenerateRoute: (settings) {
@@ -46,10 +50,35 @@ class StoryTotsApp extends StatelessWidget {
               builder: (_) => VerifyEmailScreen(email: email),
             );
           }
+          if (settings.name == '/home') {
+            final args = settings.arguments;
+            int? initialIndex;
+            if (args is Map && args['initialIndex'] is int) {
+              initialIndex = args['initialIndex'] as int;
+            } else if (args is int) {
+              initialIndex = args;
+            }
+            return MaterialPageRoute(
+              builder: (_) => MainTabs(initialIndex: initialIndex),
+            );
+          }
           return null;
         },
+        navigatorObservers: [
+          _PasswordRecoveryNavigatorObserver(),
+        ],
       ),
     );
+  }
+}
+
+class _PasswordRecoveryNavigatorObserver extends NavigatorObserver {
+  _PasswordRecoveryNavigatorObserver() {
+    Supabase.instance.client.auth.onAuthStateChange.listen((event) {
+      if (event.event == AuthChangeEvent.passwordRecovery) {
+        navigator?.pushNamed('/reset-password');
+      }
+    });
   }
 }
 
@@ -62,14 +91,12 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    // Pre-initialize sound services
     SoundService.instance.init();
     BackgroundMusicService.instance.init();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Fire-and-forget start of background music
     BackgroundMusicService.instance.start();
 
     return GlobalClickSound(
@@ -82,7 +109,6 @@ class _MyAppState extends State<MyApp> {
             seedColor: const Color(brandPurple),
           ),
           scaffoldBackgroundColor: const Color(appBg),
-          // Keep default font family. We will apply custom fonts to specific widgets.
         ),
         initialRoute: '/',
         routes: {
@@ -90,8 +116,10 @@ class _MyAppState extends State<MyApp> {
           '/login': (_) => const LoginScreen(),
           '/signup': (_) => const SignUpScreen(),
           '/otp': (_) => const OtpEmailScreen(),
+          '/forgot-password': (_) => const ForgotPasswordRequestScreen(),
+          '/reset-password': (_) => const ForgotPasswordUpdateScreen(),
           '/onboarding': (_) => const OnboardingFlow(),
-          '/home': (_) => const MainTabs(),
+          // Use onGenerateRoute for '/home' to support arguments
           '/games': (_) => const GamesScreen(),
         },
         onGenerateRoute: (settings) {
@@ -101,8 +129,23 @@ class _MyAppState extends State<MyApp> {
               builder: (_) => VerifyEmailScreen(email: email),
             );
           }
+          if (settings.name == '/home') {
+            final args = settings.arguments;
+            int? initialIndex;
+            if (args is Map && args['initialIndex'] is int) {
+              initialIndex = args['initialIndex'] as int;
+            } else if (args is int) {
+              initialIndex = args;
+            }
+            return MaterialPageRoute(
+              builder: (_) => MainTabs(initialIndex: initialIndex),
+            );
+          }
           return null;
         },
+        navigatorObservers: [
+          _PasswordRecoveryNavigatorObserver(),
+        ],
       ),
     );
   }

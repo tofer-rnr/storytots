@@ -617,7 +617,12 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       if (widget.storyId != null) {
         _assessmentRepo.addCompletedStory(widget.storyId!);
       }
-      _showCompletionDialog();
+      // Navigate straight to Games tab
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/home',
+        (route) => false,
+        arguments: {'initialIndex': 1},
+      );
     }
   }
 
@@ -695,39 +700,6 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
         ),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.celebration, color: Colors.orange),
-            const SizedBox(width: 8),
-            const Text('Story Complete!'),
-          ],
-        ),
-        content: const Text(
-          'Congratulations! You\'ve finished reading the story.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context)
-              ..pop()
-              ..pop(),
-            child: const Text('Back to Stories'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context)
-              ..pop()
-              ..pop(),
-            child: const Text('Read Another'),
-          ),
-        ],
       ),
     );
   }
