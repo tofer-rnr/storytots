@@ -12,6 +12,7 @@ import 'features/auth/screens/forgot_password_update_screen.dart';
 import 'features/interests/screens/onboarding_flow.dart';
 import 'features/shell/main_tabs.dart';
 import 'features/games/games_screen.dart';
+import 'features/settings/screens/profile_screen.dart';
 import 'core/widgets/global_click_sound.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -40,6 +41,7 @@ class StoryTotsApp extends StatelessWidget {
           '/forgot-password': (_) => const ForgotPasswordRequestScreen(),
           '/reset-password': (_) => const ForgotPasswordUpdateScreen(),
           '/onboarding': (_) => const OnboardingFlow(),
+          '/profile': (_) => const ProfileScreen(),
           // Use onGenerateRoute for '/home' to support arguments
           '/games': (_) => const GamesScreen(),
         },
@@ -64,9 +66,7 @@ class StoryTotsApp extends StatelessWidget {
           }
           return null;
         },
-        navigatorObservers: [
-          _PasswordRecoveryNavigatorObserver(),
-        ],
+        navigatorObservers: [_PasswordRecoveryNavigatorObserver()],
       ),
     );
   }
@@ -143,9 +143,7 @@ class _MyAppState extends State<MyApp> {
           }
           return null;
         },
-        navigatorObservers: [
-          _PasswordRecoveryNavigatorObserver(),
-        ],
+        navigatorObservers: [_PasswordRecoveryNavigatorObserver()],
       ),
     );
   }

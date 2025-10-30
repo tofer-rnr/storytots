@@ -105,57 +105,6 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
             backgroundColor: const Color(brandPurple),
             foregroundColor: Colors.white,
             title: const Text('Story'),
-            actions: [
-              if (!loading && story != null)
-                IconButton(
-                  tooltip: (_isFavorite ?? false)
-                      ? 'Unfavorite'
-                      : 'Add to favorites',
-                  icon: Icon(
-                    (_isFavorite ?? false)
-                        ? Icons.favorite
-                        : Icons.favorite_border,
-                    color: Colors.white,
-                  ),
-                  onPressed: () async {
-                    // Ensure row exists, then toggle
-                    try {
-                      await libraryRepo.ensureRow(
-                        storyId: story.id,
-                        title: story.title,
-                        coverUrl:
-                            story.coverUrl ?? coverAssetForTitle(story.title),
-                      );
-                    } catch (_) {}
-
-                    final newVal = !(_isFavorite ?? false);
-                    setState(() => _isFavorite = newVal);
-                    try {
-                      await libraryRepo.toggleFavorite(story.id, newVal);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              newVal
-                                  ? 'Added to favorites'
-                                  : 'Removed from favorites',
-                            ),
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      setState(() => _isFavorite = !newVal);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Failed to update favorite'),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                ),
-            ],
           ),
           body: Stack(
             fit: StackFit.expand,
@@ -205,7 +154,10 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               _roundIconButton(
-                                Icons.favorite,
+                                (_isFavorite ?? false)
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                isFilled: _isFavorite ?? false,
                                 onTap: () async {
                                   // mirror AppBar favorite toggle for convenience
                                   final favNow = !(_isFavorite ?? false);
@@ -222,6 +174,19 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                       story.id,
                                       favNow,
                                     );
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            favNow
+                                                ? 'Added to favorites'
+                                                : 'Removed from favorites',
+                                          ),
+                                        ),
+                                      );
+                                    }
                                   } catch (_) {
                                     setState(() => _isFavorite = !favNow);
                                   }
@@ -503,18 +468,25 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
 
   /// Converts a story title to a slug format for asset lookup
 
-  Widget _roundIconButton(IconData icon, {required VoidCallback onTap}) {
+  Widget _roundIconButton(
+    IconData icon, {
+    required VoidCallback onTap,
+    bool isFilled = false,
+  }) {
     return SizedBox(
       width: 44,
       height: 44,
       child: Material(
-        color: Colors.white,
+        color: isFilled ? const Color(brandPurple) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         elevation: 2,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
-          child: Icon(icon, color: const Color(brandPurple)),
+          child: Icon(
+            icon,
+            color: isFilled ? Colors.white : const Color(brandPurple),
+          ),
         ),
       ),
     );

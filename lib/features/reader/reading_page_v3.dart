@@ -95,6 +95,9 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
   DateTime? _langStartedAt;
   String? _sessionLang; // 'en' or 'tl'
 
+  // Tutorial state
+  bool _showTutorial = true;
+
   @override
   void initState() {
     super.initState();
@@ -140,6 +143,8 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       if (_sessionLang == 'en' || _sessionLang == 'tl') {
         _langStartedAt = DateTime.now();
       }
+      // Show tutorial dialog on first load
+      _showTutorialDialog();
     });
 
     // Suspend background music while reading
@@ -733,6 +738,176 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     }
   }
 
+  // ---------- Tutorial Dialog ----------
+  void _showTutorialDialog() {
+    if (!_showTutorial) return;
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(brandPurple).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lightbulb_outline,
+                  color: Color(brandPurple),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'How to Read',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _tutorialStep(
+                icon: Icons.mic,
+                step: '1',
+                title: 'Click "Start Speaking"',
+                description: 'Tap the purple button to begin',
+              ),
+              const SizedBox(height: 16),
+              _tutorialStep(
+                icon: Icons.record_voice_over,
+                step: '2',
+                title: 'Read the sentence out loud',
+                description: 'Say each word clearly',
+              ),
+              const SizedBox(height: 16),
+              _tutorialStep(
+                icon: Icons.check_circle,
+                step: '3',
+                title: 'See your progress',
+                description: 'Correct words turn green!',
+              ),
+            ],
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(brandPurple),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  setState(() => _showTutorial = false);
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  'Got it! Let\'s start',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _tutorialStep({
+    required IconData icon,
+    required String step,
+    required String title,
+    required String description,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: const Color(brandPurple),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              step,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 20, color: const Color(brandPurple)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStartButton() {
+    return FilledButton.icon(
+      onPressed: _serviceReady
+          ? (_listening ? _stopListen : _startListen)
+          : null,
+      icon: Icon(_listening ? Icons.mic : Icons.mic_none, size: 24),
+      label: Text(
+        _listening ? 'Stop Speaking' : 'Start Speaking',
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      style: FilledButton.styleFrom(
+        backgroundColor: _listening
+            ? Colors.red[600]
+            : const Color(brandPurple),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+    );
+  }
+
   // ---------- Progress integration ----------
   Future<void> _loadProgress() async {
     if (widget.storyId == null) return;
@@ -1157,29 +1332,26 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
           // Control buttons
           Row(
             children: [
-              // Start/Stop speaking button
+              // Start/Stop speaking button with pulsing animation
               Expanded(
                 flex: 2,
-                child: FilledButton.icon(
-                  onPressed: _serviceReady
-                      ? (_listening ? _stopListen : _startListen)
-                      : null,
-                  icon: Icon(_listening ? Icons.mic : Icons.mic_none, size: 24),
-                  label: Text(
-                    _listening ? 'Stop Speaking' : 'Start Speaking',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _listening
-                        ? Colors.red[600]
-                        : const Color(brandPurple),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
+                child: !_listening && _showTutorial
+                    ? TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 1.0, end: 1.08),
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeInOut,
+                        builder: (context, scale, child) {
+                          return Transform.scale(scale: scale, child: child);
+                        },
+                        onEnd: () {
+                          // Repeat animation if still showing tutorial
+                          if (mounted && _showTutorial && !_listening) {
+                            setState(() {});
+                          }
+                        },
+                        child: _buildStartButton(),
+                      )
+                    : _buildStartButton(),
               ),
 
               const SizedBox(width: 12),
