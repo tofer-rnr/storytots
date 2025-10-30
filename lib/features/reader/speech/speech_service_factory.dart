@@ -1,17 +1,18 @@
 // Factory to create different speech recognition services
 import 'engine.dart';
 import 'stt_engine.dart';
-import 'azure_speech_engine.dart';
+// import 'openai_whisper_engine.dart'; // Removed - using device STT only
 
-enum SpeechServiceType { deviceSTT, azureSpeech }
+enum SpeechServiceType { deviceSTT, openaiWhisper }
 
 class SpeechServiceFactory {
   static SpeechEngine create(SpeechServiceType type) {
     switch (type) {
       case SpeechServiceType.deviceSTT:
         return SpeechToTextEngine();
-      case SpeechServiceType.azureSpeech:
-        return AzureSpeechEngine();
+      case SpeechServiceType.openaiWhisper:
+        // Route to device STT for now (Whisper removed due to cost)
+        return SpeechToTextEngine();
     }
   }
 
@@ -19,8 +20,8 @@ class SpeechServiceFactory {
     switch (type) {
       case SpeechServiceType.deviceSTT:
         return 'Device STT';
-      case SpeechServiceType.azureSpeech:
-        return 'Azure Speech';
+      case SpeechServiceType.openaiWhisper:
+        return 'Device STT'; // Whisper unavailable
     }
   }
 
@@ -28,14 +29,12 @@ class SpeechServiceFactory {
     switch (type) {
       case SpeechServiceType.deviceSTT:
         return true; // Always available
-      case SpeechServiceType.azureSpeech:
-        return true; // Requires internet connection
+      case SpeechServiceType.openaiWhisper:
+        return false; // Disabled - using device STT only
     }
   }
 
   static List<SpeechServiceType> getAvailableServices() {
-    return SpeechServiceType.values
-        .where((service) => isServiceAvailable(service))
-        .toList();
+    return [SpeechServiceType.deviceSTT]; // Only device STT available
   }
 }

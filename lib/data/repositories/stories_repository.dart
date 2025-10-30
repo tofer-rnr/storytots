@@ -68,7 +68,7 @@ class StoriesRepository {
         .maybeSingle();
 
     if (row == null) return null;
-    return Story.fromMap(row as Map<String, dynamic>);
+    return Story.fromMap(row);
   }
 
   /// Returns stories the user has opened, oldest -> newest (FIFO).
@@ -107,5 +107,15 @@ class StoriesRepository {
       'story_id': storyId,
       'last_read_at': DateTime.now().toIso8601String(),
     }, onConflict: 'user_id,story_id');
+  }
+
+  Future<List<Story>> listByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final rows = await supa
+        .from('stories')
+        .select('*')
+        .filter('id', 'in', '(${ids.map((e) => '"$e"').join(',')})');
+    final list = (rows as List?) ?? const [];
+    return list.map((e) => Story.fromMap(e as Map<String, dynamic>)).toList();
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants.dart';
 import '../../../../data/repositories/profile_repository.dart';
+import '../../../../data/repositories/auth_cache_repository.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _authCache = AuthCacheRepository();
 
   bool _loading = false;
   bool _obscure = true;
@@ -55,6 +57,10 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _email.text.trim(),
         password: _password.text,
       );
+
+      // Cache the session for persistent login
+      await _authCache.cacheCurrentSession();
+
       await _routeAfterAuth();
     } on AuthException catch (e) {
       _toast(e.message);
@@ -146,13 +152,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 28),
+                          horizontal: 20,
+                          vertical: 28,
+                        ),
                         child: Form(
                           key: _formKey,
                           child: Theme(
-                            data: Theme.of(context).copyWith(
-                              inputDecorationTheme: inputTheme,
-                            ),
+                            data: Theme.of(
+                              context,
+                            ).copyWith(inputDecorationTheme: inputTheme),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -163,7 +171,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   keyboardType: TextInputType.emailAddress,
                                   validator: _emailValidator,
                                   style: const TextStyle(
-                                      color: Colors.white, fontSize: 16),
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
                                   cursorColor: Colors.white,
                                   decoration: const InputDecoration(
                                     labelText: 'Email',
@@ -177,7 +187,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   validator: _passwordValidator,
                                   obscureText: _obscure,
                                   style: const TextStyle(
-                                      color: Colors.white, fontSize: 16),
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
                                   cursorColor: Colors.white,
                                   decoration: InputDecoration(
                                     labelText: 'Password',
@@ -201,7 +213,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     onPressed: _loading
                                         ? null
                                         : () => Navigator.pushNamed(
-                                            context, '/forgot-password'),
+                                            context,
+                                            '/forgot-password',
+                                          ),
                                     style: TextButton.styleFrom(
                                       padding: const EdgeInsets.only(top: 8),
                                     ),
@@ -224,10 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.black26,
-                          ),
+                          child: Container(height: 1, color: Colors.black26),
                         ),
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 12.0),
@@ -237,10 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.black26,
-                          ),
+                          child: Container(height: 1, color: Colors.black26),
                         ),
                       ],
                     ),
@@ -305,7 +313,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _loading
                           ? null
                           : () => Navigator.pushReplacementNamed(
-                              context, '/signup'),
+                              context,
+                              '/signup',
+                            ),
                       child: const Text(
                         'Create Account',
                         style: TextStyle(
@@ -360,9 +370,7 @@ class _SocialCircleButton extends StatelessWidget {
                 : null,
           ),
           alignment: Alignment.center,
-          child: icon != null
-              ? Icon(icon, color: Colors.white)
-              : child,
+          child: icon != null ? Icon(icon, color: Colors.white) : child,
         ),
       ),
     );

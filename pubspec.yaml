@@ -24,14 +24,86 @@ dependencies:
   # record: ^4.4.4
   path_provider: ^2.1.1
   http: ^1.2.0
+  shared_preferences: ^2.3.2
+  audioplayers: ^5.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
     - assets/images/covers/
+    - assets/stories/
+    - assets/stories/_normalized_stories/
+    # Include all story subdirectories with their content
+    - assets/stories/the-monkey-and-the-turtle/en/pages/
+    - assets/stories/the-monkey-and-the-turtle/en/
+    - assets/stories/the-monkey-and-the-turtle/tl/pages/
+    - assets/stories/the-monkey-and-the-turtle/tl/
+    - assets/stories/alamat-ng-saging/en/pages/
+    - assets/stories/alamat-ng-saging/en/
+    - assets/stories/alamat-ng-saging/tl/pages/
+    - assets/stories/alamat-ng-saging/tl/
+    - assets/stories/alamat-ng-sampaguita/en/pages/
+    - assets/stories/alamat-ng-sampaguita/en/
+    - assets/stories/alamat-ng-sampaguita/tl/pages/
+    - assets/stories/alamat-ng-sampaguita/tl/
+    - assets/stories/_normalized_stories/The_Legend_of_the_Bitter_Gourd/en/pages/
+    - assets/stories/_normalized_stories/The_Legend_of_the_Bitter_Gourd/en/
+    - assets/stories/_normalized_stories/The_Legend_of_the_Bitter_Gourd/tl/pages/
+    - assets/stories/_normalized_stories/The_Legend_of_the_Bitter_Gourd/tl/
+    - assets/stories/_normalized_stories/The_Legend_of_the_Rainbow/en/pages/
+    - assets/stories/_normalized_stories/The_Legend_of_the_Rainbow/en/
+    - assets/stories/_normalized_stories/The_Legend_of_the_Rainbow/tl/pages/
+    - assets/stories/_normalized_stories/The_Lion_and_the_Mouse/en/pages/
+    - assets/stories/_normalized_stories/The_Lion_and_the_Mouse/en/
+    - assets/stories/_normalized_stories/The_Lion_and_the_Mouse/tl/pages/
+    - assets/stories/_normalized_stories/The_Ant_and_the_Grasshopper/en/pages/
+    - assets/stories/_normalized_stories/The_Ant_and_the_Grasshopper/en/
+    - assets/stories/_normalized_stories/The_Ant_and_the_Grasshopper/tl/pages/
+    - assets/stories/_normalized_stories/Why_the_Ocean_Is_Salty/en/pages/
+    - assets/stories/_normalized_stories/Why_the_Ocean_Is_Salty/en/
+    - assets/stories/_normalized_stories/Why_the_Ocean_Is_Salty/tl/pages/
+    - assets/stories/_normalized_stories/Why_the_Ocean_Is_Salty/tl/
+    - assets/stories/_normalized_stories/Why_the_Sky_Is_High/en/pages/
+    - assets/stories/_normalized_stories/Why_the_Sky_Is_High/en/
+    - assets/stories/_normalized_stories/Why_the_Sky_Is_High/tl/pages/
+    - assets/stories/_normalized_stories/Why_the_Sky_Is_High/tl/
+    - assets/stories/_normalized_stories/The_Carabao_and_the_Shell/en/pages/
+    - assets/stories/_normalized_stories/The_Carabao_and_the_Shell/en/
+    - assets/stories/_normalized_stories/The_Carabao_and_the_Shell/tl/pages/
+    - assets/stories/_normalized_stories/Stories_of_Juan_Tamad/en/pages/
+    - assets/stories/_normalized_stories/Stories_of_Juan_Tamad/en/
+    - assets/stories/_normalized_stories/Stories_of_Juan_Tamad/tl/pages/
+    - assets/stories/_normalized_stories/Stories_of_Juan_Tamad/tl/
+    - assets/stories/_normalized_stories/Legend_of_the_PineApple/en/pages/
+    - assets/stories/_normalized_stories/Legend_of_the_PineApple/en/
+    - assets/stories/_normalized_stories/Legend_of_the_PineApple/tl/pages/
+    - assets/stories/_normalized_stories/Legend_of_the_PineApple/tl/
+    - assets/sounds/
+  fonts:
+    - family: Growback
+      fonts:
+        - asset: assets/fonts/growback.ttf
+    - family: RustyHooks
+      fonts:
+        - asset: assets/fonts/RustyHooks.ttf
+    - family: OddlyCalming
+      fonts:
+        - asset: assets/fonts/OddlyCalming.ttf
+    - family: CatchyMelody
+      fonts:
+        - asset: assets/fonts/CatchyMelody.ttf
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/icon.png
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/images/icon.png
+  min_sdk_android: 21

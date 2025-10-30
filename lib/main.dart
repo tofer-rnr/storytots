@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'core/constants.dart';
+import 'data/repositories/auth_cache_repository.dart';
 import 'app.dart';
+import 'core/services/sound_service.dart';
+import 'core/services/background_music_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +18,18 @@ Future<void> main() async {
     ),
   );
 
+  // Initialize auth cache for persistent login
+  final authCache = AuthCacheRepository();
+  await authCache.initialize();
+
   await Permission.microphone.request();
+
+  // Prepare global click sound
+  await SoundService.instance.init();
+
+  // Prepare background music and start playing softly
+  await BackgroundMusicService.instance.init(volume: 0.35);
+  await BackgroundMusicService.instance.start();
 
   runApp(const StoryTotsApp());
 }
