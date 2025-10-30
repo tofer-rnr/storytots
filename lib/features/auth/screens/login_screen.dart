@@ -234,52 +234,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Divider "or login with"
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(height: 1, color: Colors.black26),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12.0),
-                          child: Text(
-                            'or login with',
-                            style: TextStyle(color: Colors.black54),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(height: 1, color: Colors.black26),
-                        ),
-                      ],
-                    ),
+                
 
                     const SizedBox(height: 14),
 
-                    // Social buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _SocialCircleButton(
-                          color: const Color(0xFF1877F2),
-                          icon: Icons.facebook,
-                          onPressed: _loading ? null : _loginWithFacebook,
-                        ),
-                        const SizedBox(width: 24),
-                        _SocialCircleButton(
-                          color: Colors.white,
-                          borderColor: Colors.black26,
-                          child: const Text(
-                            'G',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.redAccent,
-                            ),
-                          ),
-                          onPressed: _loading ? null : _loginWithGoogle,
-                        ),
-                      ],
-                    ),
+                 
 
                     const SizedBox(height: 22),
 

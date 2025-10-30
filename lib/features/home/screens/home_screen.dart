@@ -163,10 +163,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         final dynamicPath = key != null
                             ? _avatarAssetFromKey(key)
                             : avatarPath;
-                        return CircleAvatar(
-                          radius: 16,
-                          backgroundImage: AssetImage(dynamicPath),
-                          onBackgroundImageError: (_, __) {},
+                        return GestureDetector(
+                          onTap: () {
+                            // Navigate to Settings > Profile
+                            Navigator.pushNamed(context, '/profile');
+                          },
+                          child: CircleAvatar(
+                            radius: 16,
+                            backgroundImage: AssetImage(dynamicPath),
+                            onBackgroundImageError: (_, __) {},
+                          ),
                         );
                       },
                     ),
