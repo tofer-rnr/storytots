@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:storytots/data/repositories/auth_cache_repository.dart';
+import 'package:storytots/data/repositories/role_mode_repository.dart';
 import 'package:storytots/core/constants.dart';
 import 'package:storytots/features/settings/screens/profile_screen.dart';
+import 'package:storytots/features/settings/screens/parent_report_screen.dart';
 import 'about_screen.dart';
 import 'help_screen.dart';
 import 'sound_settings_screen.dart';
@@ -78,6 +80,16 @@ class SettingsScreen extends StatelessWidget {
                     _SettingsActionCard(
                       label: 'PROFILE',
                       onTap: () => _openProfile(context),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionCard(
+                      label: 'REPORTS',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ParentReportScreen(),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 14),
                     _SettingsActionCard(
@@ -168,6 +180,8 @@ class SettingsScreen extends StatelessWidget {
       final authCache = AuthCacheRepository();
       await authCache.clearCache();
       await Supabase.instance.client.auth.signOut();
+      // Clear role mode
+      await RoleModeRepository().clear();
 
       if (context.mounted) {
         Navigator.of(

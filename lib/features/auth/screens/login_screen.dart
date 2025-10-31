@@ -4,6 +4,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants.dart';
 import '../../../../data/repositories/profile_repository.dart';
 import '../../../../data/repositories/auth_cache_repository.dart';
+import '../../../../data/repositories/role_mode_repository.dart';
+import '../../../../data/repositories/reading_activity_repository.dart';
+import '../../../../data/repositories/progress_repository.dart';
+import '../../../../data/repositories/difficult_words_repository.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,6 +21,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _authCache = AuthCacheRepository();
+  String _selectedMode = 'kid'; // 'kid' or 'parent'
+  final _roleRepo = RoleModeRepository();
 
   bool _loading = false;
   bool _obscure = true;
@@ -61,6 +67,21 @@ class _LoginScreenState extends State<LoginScreen> {
       // Cache the session for persistent login
       await _authCache.cacheCurrentSession();
 
+      // Persist chosen role mode
+      await _roleRepo.setMode(_selectedMode);
+
+      // Best-effort: flush any locally queued data to Supabase
+      try {
+        await ReadingActivityRepository().flushQueue();
+      } catch (_) {}
+      try {
+        await ProgressRepository().flushPendingProgress();
+      } catch (_) {}
+      try {
+        final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
+        await DifficultWordsRepository().flushToServer(userId: uid);
+      } catch (_) {}
+
       await _routeAfterAuth();
     } on AuthException catch (e) {
       _toast(e.message);
@@ -69,14 +90,6 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  void _loginWithGoogle() {
-    _toast('Google sign-in coming soon');
-  }
-
-  void _loginWithFacebook() {
-    _toast('Facebook sign-in coming soon');
   }
 
   @override
@@ -165,6 +178,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
+                                // Role toggle (segmented)
+                                _RoleSegmentedToggle(
+                                  value: _selectedMode,
+                                  onChanged: _loading
+                                      ? null
+                                      : (v) => setState(() => _selectedMode = v),
+                                ),
+                                const SizedBox(height: 14),
                                 // Email
                                 TextFormField(
                                   controller: _email,
@@ -294,42 +315,101 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-class _SocialCircleButton extends StatelessWidget {
-  const _SocialCircleButton({
-    this.icon,
-    this.child,
-    this.color = Colors.white,
-    this.borderColor,
-    required this.onPressed,
-  });
-
-  final IconData? icon;
-  final Widget? child;
-  final Color color;
-  final Color? borderColor;
-  final VoidCallback? onPressed;
+class _RoleSegmentedToggle extends StatelessWidget {
+  final String value; // 'kid' or 'parent'
+  final ValueChanged<String>? onChanged;
+  const _RoleSegmentedToggle({required this.value, this.onChanged});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      shape: const CircleBorder(),
-      color: color,
-      elevation: 4,
-      shadowColor: Colors.black26,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onPressed,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: borderColor != null
-                ? Border.all(color: borderColor!, width: 1)
-                : null,
+    final isKid = value == 'kid';
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24, width: 1),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Stack(
+        children: [
+          // Animated pill background
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            alignment: isKid ? Alignment.centerLeft : Alignment.centerRight,
+            child: FractionallySizedBox(
+              widthFactor: 0.5,
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    )
+                  ],
+                ),
+              ),
+            ),
           ),
+          SizedBox(
+            height: 40,
+            child: Row(
+              children: [
+                _segButton(
+                  context: context,
+                  label: 'Kid',
+                  selected: isKid,
+                  icon: Icons.child_care_outlined,
+                  onTap: onChanged == null ? null : () => onChanged!('kid'),
+                ),
+                _segButton(
+                  context: context,
+                  label: 'Parent',
+                  selected: !isKid,
+                  icon: Icons.lock_outline,
+                  onTap: onChanged == null ? null : () => onChanged!('parent'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _segButton({
+    required BuildContext context,
+    required String label,
+    required bool selected,
+    required IconData icon,
+    VoidCallback? onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          height: 40,
           alignment: Alignment.center,
-          child: icon != null ? Icon(icon, color: Colors.white) : child,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: selected ? const Color(brandPurple) : Colors.white),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? const Color(brandPurple) : Colors.white,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

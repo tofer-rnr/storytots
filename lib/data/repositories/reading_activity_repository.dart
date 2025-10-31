@@ -8,11 +8,15 @@ class LanguageStats {
   final int filipinoMinutes;
   final int totalMinutes;
   final double activityPercent; // 0..1 against daily goal
+  final int totalWords; // aggregated today
+  final int wpm; // computed as totalWords / max(1, totalMinutes)
   const LanguageStats({
     required this.englishMinutes,
     required this.filipinoMinutes,
     required this.totalMinutes,
     required this.activityPercent,
+    required this.totalWords,
+    required this.wpm,
   });
 }
 
@@ -20,6 +24,7 @@ class ReadingActivityRepository {
   final supa = Supabase.instance.client;
   static const _queueKey = 'reading_activity_queue';
   static const _aggPrefix = 'reading_minutes:'; // reading_minutes:YYYY-MM-DD:en
+  static const _wordsAggPrefix = 'reading_words:'; // reading_words:YYYY-MM-DD
   static const int dailyGoalMinutes = 60; // can be adjusted later
   static const _lastSessionKey = 'reading_last_session_at';
 
@@ -34,6 +39,7 @@ class ReadingActivityRepository {
     String? storyId,
     DateTime? startedAt,
     DateTime? endedAt,
+    int? wordsCount,
   }) async {
     // Normalize language
     final language = (lang == 'tl' || lang.toLowerCase() == 'filipino')
@@ -58,6 +64,7 @@ class ReadingActivityRepository {
       'started_at': (startedAt ?? now.subtract(duration)).toIso8601String(),
       'ended_at': (endedAt ?? now).toIso8601String(),
       'day': _dayKey(now),
+      'words_count': wordsCount ?? 0,
     };
     list.add(item);
     await prefs.setString(_queueKey, json.encode(list));
@@ -67,6 +74,12 @@ class ReadingActivityRepository {
     final aggKey = '$_aggPrefix$day:$language';
     final current = prefs.getInt(aggKey) ?? 0;
     await prefs.setInt(aggKey, current + seconds);
+    // Words aggregate (per day, all languages combined)
+    if ((wordsCount ?? 0) > 0) {
+      final wordsKey = '$_wordsAggPrefix$day';
+      final cw = prefs.getInt(wordsKey) ?? 0;
+      await prefs.setInt(wordsKey, cw + (wordsCount ?? 0));
+    }
 
     // Record last session end time for Profile metrics
     await prefs.setString(_lastSessionKey, item['ended_at'] as String);
@@ -82,11 +95,15 @@ class ReadingActivityRepository {
     final tlMin = (tlSec / 60).floor();
 
     final pct = ((enMin + tlMin) / dailyGoalMinutes).clamp(0, 1).toDouble();
+    final words = prefs.getInt('$_wordsAggPrefix$day') ?? 0;
+    final wpm = totalMin > 0 ? (words / totalMin).round() : 0;
     return LanguageStats(
       englishMinutes: enMin,
       filipinoMinutes: tlMin,
       totalMinutes: totalMin,
       activityPercent: pct,
+      totalWords: words,
+      wpm: wpm,
     );
   }
 

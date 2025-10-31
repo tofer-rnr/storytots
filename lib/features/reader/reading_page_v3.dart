@@ -16,6 +16,8 @@ import '../../data/repositories/library_repository.dart';
 import '../../data/repositories/progress_repository.dart';
 import '../../data/repositories/assessment_repository.dart';
 import '../../core/services/background_music_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/repositories/difficult_words_repository.dart';
 
 class ReadingPageV3 extends StatefulWidget {
   const ReadingPageV3({
@@ -86,6 +88,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
   // Enhanced pronunciation feedback
   Map<String, String> _mispronunciationFeedback = {};
   List<String> _currentSentenceMistakes = [];
+  final _difficultRepo = DifficultWordsRepository();
 
   // Language selection (implicit): 'English', 'Filipino', or 'Auto'
   String _lang = 'Auto';
@@ -158,12 +161,24 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     final now = DateTime.now();
     final dur = now.difference(_langStartedAt!);
     if (dur.inSeconds > 0) {
+      // Estimate words from sentences processed since last segment start.
+      // We approximate by counting words in current expected sentence when moving forward.
+      // For segment-level estimate, use average 8 words per sentence advance since _langStartedAt.
+      // This keeps it simple and avoids heavy tracking.
+      int estWords = 0;
+      try {
+        // Count sentences completed since last segment start: at least 1 if any progress.
+        // We approximate with _currentSentence as progress marker; cannot know previous without stored value.
+        // Conservative: add words of the just-completed sentence when _moveToNextSentence is called.
+        // Here, we don't have delta, so leave 0; word events will be recorded at sentence transitions below.
+      } catch (_) {}
       _activityRepo.addReadingSegment(
         lang: lang!,
         duration: dur,
         storyId: widget.storyId,
         startedAt: _langStartedAt,
         endedAt: now,
+        wordsCount: estWords,
       );
     }
     _langStartedAt = now;
@@ -457,7 +472,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       final result = results[i];
       WordStatus status;
 
-      switch (result.status) {
+    switch (result.status) {
         case MatchStatus.correct:
           status = WordStatus.correct;
           break;
@@ -467,10 +482,12 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
           // Store pronunciation feedback
           _mispronunciationFeedback[expectedWords[i]] =
               result.spokenAs ?? 'not detected';
+      _recordDifficult(expectedWords[i]);
           break;
         case MatchStatus.missing:
           status = WordStatus.incorrect;
           _currentSentenceMistakes.add(expectedWords[i]);
+      _recordDifficult(expectedWords[i]);
           break;
       }
 
@@ -493,6 +510,13 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     } else {
       _showSentenceFeedback();
     }
+  }
+
+  Future<void> _recordDifficult(String word) async {
+    final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
+    try {
+      await _difficultRepo.addWord(word: word, userId: uid);
+    } catch (_) {}
   }
 
   List<WordMatchResult> _compareWordSequences(
@@ -595,6 +619,19 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
 
   void _moveToNextSentence() {
     if (_currentSentence < _sentences.length - 1) {
+      // When a sentence is completed, record its word count to improve WPM estimate.
+      try {
+        final wordsInSentence = _sentenceMatchWords[_currentSentence].length;
+        final lang = _sessionLang;
+        if (lang == 'en' || lang == 'tl') {
+          _activityRepo.addReadingSegment(
+            lang: lang!,
+            duration: const Duration(seconds: 0),
+            storyId: widget.storyId,
+            wordsCount: wordsInSentence,
+          );
+        }
+      } catch (_) {}
       setState(() {
         _currentSentence++;
         // Mark first word of next sentence as current
@@ -616,6 +653,19 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       _saveProgress(isCompleted: false);
     } else {
       // Story completed!
+      // Record the last sentence words as well
+      try {
+        final wordsInSentence = _sentenceMatchWords[_currentSentence].length;
+        final lang = _sessionLang;
+        if (lang == 'en' || lang == 'tl') {
+          _activityRepo.addReadingSegment(
+            lang: lang!,
+            duration: const Duration(seconds: 0),
+            storyId: widget.storyId,
+            wordsCount: wordsInSentence,
+          );
+        }
+      } catch (_) {}
       // Persist completion state before showing dialog
       _saveProgress(isCompleted: true);
       // Mark as available for assessment
@@ -974,7 +1024,10 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
         sentenceIndex: _currentSentence,
         isCompleted: isCompleted,
         updatedAt: DateTime.now(),
-        meta: {'title': widget.storyTitle},
+        meta: {
+          'title': widget.storyTitle,
+          'total_sentences': _sentences.length,
+        },
       );
 
       await _progressRepo.saveLocalProgress(p);
