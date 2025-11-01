@@ -8,6 +8,7 @@ import '../../../../data/repositories/role_mode_repository.dart';
 import '../../../../data/repositories/reading_activity_repository.dart';
 import '../../../../data/repositories/progress_repository.dart';
 import '../../../../data/repositories/difficult_words_repository.dart';
+import '../../../../data/repositories/assessment_repository.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -80,6 +81,10 @@ class _LoginScreenState extends State<LoginScreen> {
       try {
         final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
         await DifficultWordsRepository().flushToServer(userId: uid);
+      } catch (_) {}
+      try {
+        // Also ensure completed assessments are synced to Supabase and cache refreshed
+        await AssessmentRepository().getCompletedStoryIds();
       } catch (_) {}
 
       await _routeAfterAuth();

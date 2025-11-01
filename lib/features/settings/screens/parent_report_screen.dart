@@ -39,13 +39,32 @@ class _ParentReportScreenState extends State<ParentReportScreen> {
   @override
   void initState() {
     super.initState();
+    _guardRole();
     _load();
   }
+
+  Future<void> _guardRole() async {
+    final isParent = await RoleModeRepository().isParentMode();
+    if (!isParent && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reports are available for parents only.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.of(context).maybePop();
+    }
+  }
+
+  
 
   Future<void> _load() async {
     setState(() => _loading = true);
     final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
     try {
+  // Ensure any local data gets flushed to server first so we read fresh values
+  await ReadingActivityRepository().flushQueue();
+  await _progressRepo.flushPendingProgress();
       final stats = await _stats.getStatsDbFirst();
       final history = await _library.listHistory();
       final completedIds = await _assess.getCompletedStoryIds();
