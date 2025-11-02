@@ -210,6 +210,17 @@ class _ParentReportScreenState extends State<ParentReportScreen> {
           ),
           const SizedBox(height: 12),
           _buildSpeedRow(),
+          const SizedBox(height: 6),
+          FutureBuilder<LanguageStats>(
+            future: ReadingActivityRepository().getTodayLanguageStats(),
+            builder: (context, snap) {
+              final todayWpm = snap.data?.wpm ?? 0;
+              return Text(
+                'Today\'s WPM: $todayWpm',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              );
+            },
+          ),
           if (s.lastSessionAt != null) ...[
             const SizedBox(height: 8),
             Text(
@@ -413,20 +424,16 @@ class _ParentReportScreenState extends State<ParentReportScreen> {
   Widget _buildSpeedRow() {
     final s = _profileStats;
     if (s == null) return const SizedBox.shrink();
-    // Estimate: sentencesPracticed over last week is not time-bound; we’ll use today’s minutes for speed bands instead.
-    // For a simple WPM estimate, assume ~120 WPM is baseline; we display relative advisory only.
-    final todayMinFuture = ReadingActivityRepository().getTodayLanguageStats();
+  final todayMinFuture = ReadingActivityRepository().getTodayLanguageStats();
     return FutureBuilder<LanguageStats>(
       future: todayMinFuture,
       builder: (context, snap) {
-        final mins = snap.data?.totalMinutes ?? 0;
-        // Estimate WPM from activity: assume average 100 words/min when active. If mins=0, show 0.
-        final wpm = mins > 0 ? 100 : 0;
+    final wpm = snap.data?.wpm ?? 0;
         final band = wpm == 0
             ? 'No reading today'
-            : (wpm < 80
-                ? 'Developing pace'
-                : (wpm <= 140 ? 'Comfortable pace' : 'Fast pace'));
+      : (wpm < 60
+        ? 'Developing pace'
+        : (wpm <= 120 ? 'Comfortable pace' : 'Fast pace'));
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

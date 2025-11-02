@@ -84,6 +84,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
   final _assessmentRepo = AssessmentRepository();
   bool? _isFavorite;
   Timer? _statusTimer;
+  Timer? _flushTimer;
 
   // Enhanced pronunciation feedback
   Map<String, String> _mispronunciationFeedback = {};
@@ -119,9 +120,9 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       _lang = 'English';
       _sessionLang = 'en';
     } else {
-      // Fallback to auto
-      _lang = 'Auto';
-      _sessionLang = null;
+  // Fallback to English to ensure activity tracking always has a language
+  _lang = 'English';
+  _sessionLang = 'en';
     }
 
     _prepareSentences(initialText);
@@ -139,6 +140,14 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       if (mounted && ls != _listening) {
         setState(() => _listening = ls);
       }
+    });
+
+    // Periodically flush reading activity and progress so server data stays fresh
+    _flushTimer = Timer.periodic(const Duration(seconds: 45), (_) async {
+      try {
+        await _activityRepo.flushQueue();
+        await _progressRepo.flushPendingProgress();
+      } catch (_) {}
     });
 
     // Mark language session start once initialized
@@ -190,6 +199,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     _finishLanguageSegment();
     _activityRepo.flushQueue();
     _statusTimer?.cancel();
+  _flushTimer?.cancel();
     _sentenceTimeout?.cancel();
     _stopListen();
     _tts.stop();

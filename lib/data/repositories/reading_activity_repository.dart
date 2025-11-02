@@ -45,8 +45,10 @@ class ReadingActivityRepository {
     final language = (lang == 'tl' || lang.toLowerCase() == 'filipino')
         ? 'tl'
         : 'en';
-    final seconds = duration.inSeconds;
-    if (seconds <= 0) return;
+  final seconds = duration.inSeconds;
+  final wc = wordsCount ?? 0;
+  // Allow words-only updates even if duration is zero (for WPM accuracy)
+  if (seconds <= 0 && wc <= 0) return;
 
     // Queue for server sync
     final prefs = await _prefs;
@@ -56,13 +58,15 @@ class ReadingActivityRepository {
         : List<Map<String, dynamic>>.from(json.decode(raw));
 
     final now = DateTime.now();
+    final start = (startedAt ?? now.subtract(duration)).toUtc();
+    final end = (endedAt ?? now).toUtc();
     final item = {
       'user_id': supa.auth.currentUser?.id,
       'story_id': storyId,
       'language': language,
       'duration_sec': seconds,
-      'started_at': (startedAt ?? now.subtract(duration)).toIso8601String(),
-      'ended_at': (endedAt ?? now).toIso8601String(),
+      'started_at': start.toIso8601String(),
+      'ended_at': end.toIso8601String(),
       'day': _dayKey(now),
       'words_count': wordsCount ?? 0,
     };
@@ -73,16 +77,18 @@ class ReadingActivityRepository {
     final day = _dayKey(now);
     final aggKey = '$_aggPrefix$day:$language';
     final current = prefs.getInt(aggKey) ?? 0;
-    await prefs.setInt(aggKey, current + seconds);
+    if (seconds > 0) {
+      await prefs.setInt(aggKey, current + seconds);
+    }
     // Words aggregate (per day, all languages combined)
-    if ((wordsCount ?? 0) > 0) {
+    if (wc > 0) {
       final wordsKey = '$_wordsAggPrefix$day';
       final cw = prefs.getInt(wordsKey) ?? 0;
-      await prefs.setInt(wordsKey, cw + (wordsCount ?? 0));
+      await prefs.setInt(wordsKey, cw + wc);
     }
 
     // Record last session end time for Profile metrics
-    await prefs.setString(_lastSessionKey, item['ended_at'] as String);
+  await prefs.setString(_lastSessionKey, end.toIso8601String());
   }
 
   Future<LanguageStats> getTodayLanguageStats() async {
@@ -90,13 +96,18 @@ class ReadingActivityRepository {
     final day = _dayKey(DateTime.now());
     final enSec = prefs.getInt('$_aggPrefix$day:en') ?? 0;
     final tlSec = prefs.getInt('$_aggPrefix$day:tl') ?? 0;
-    final totalMin = ((enSec + tlSec) / 60).floor();
+  final totalSec = (enSec + tlSec);
+  final totalMin = (totalSec / 60).floor();
     final enMin = (enSec / 60).floor();
     final tlMin = (tlSec / 60).floor();
 
-    final pct = ((enMin + tlMin) / dailyGoalMinutes).clamp(0, 1).toDouble();
+  // Use seconds for smoother percent under 1 minute
+  final pct = (totalSec / (dailyGoalMinutes * 60))
+    .clamp(0, 1)
+    .toDouble();
     final words = prefs.getInt('$_wordsAggPrefix$day') ?? 0;
-    final wpm = totalMin > 0 ? (words / totalMin).round() : 0;
+  // Compute WPM based on seconds to avoid zero before 1 minute
+  final wpm = totalSec > 0 ? ((words * 60) / totalSec).round() : 0;
     return LanguageStats(
       englishMinutes: enMin,
       filipinoMinutes: tlMin,

@@ -4,7 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:storytots/core/constants.dart';
 import 'package:storytots/data/repositories/reading_activity_repository.dart';
 import 'package:storytots/data/services/profile_stats_service.dart';
+import 'package:storytots/data/repositories/game_activity_repository.dart';
 import 'edit_profile_screen.dart';
+import 'badges_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,6 +20,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _activityRepo = ReadingActivityRepository();
   LanguageStats? _today;
   ProfileStats? _stats;
+  int _gameMin = 0;
   
 
   @override
@@ -26,6 +29,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _future = _loadProfile();
     _loadActivity();
     _loadStats();
+    GameActivityRepository().getTodayGameMinutes().then((v) {
+      if (!mounted) return;
+      setState(() => _gameMin = v);
+    });
   }
 
   Future<_ProfileData> _loadProfile() async {
@@ -275,12 +282,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Time Spent (reading today)
-                    _timeSpent(game: 0, reading: _today?.totalMinutes ?? 0),
+                    // Time Spent (reading today) + WPM
+                    _timeSpent(game: _gameMin, reading: _today?.totalMinutes ?? 0),
+                    const SizedBox(height: 10),
+                    if (_today != null)
+                      _wpmCard(_today!.wpm),
 
                     const SizedBox(height: 12),
 
-                    _badgesCta(),
+                    _badgesCta(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BadgesScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -706,14 +725,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  static Widget _badgesCta() {
+  static Widget _badgesCta({required VoidCallback onTap}) {
     return SizedBox(
       height: 48,
       child: Material(
         color: const Color(brandPurple),
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
-          onTap: null,
+          onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -779,6 +798,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(18),
       ),
       child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+    );
+  }
+
+  static Widget _wpmCard(int wpm) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          const Icon(Icons.speed, color: Color(brandPurple)),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Reading is fun! Your pace today',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          Text('$wpm WPM', style: const TextStyle(fontWeight: FontWeight.w900)),
+        ],
+      ),
     );
   }
 }
