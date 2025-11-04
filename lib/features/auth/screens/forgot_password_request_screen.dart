@@ -6,10 +6,12 @@ class ForgotPasswordRequestScreen extends StatefulWidget {
   const ForgotPasswordRequestScreen({super.key});
 
   @override
-  State<ForgotPasswordRequestScreen> createState() => _ForgotPasswordRequestScreenState();
+  State<ForgotPasswordRequestScreen> createState() =>
+      _ForgotPasswordRequestScreenState();
 }
 
-class _ForgotPasswordRequestScreenState extends State<ForgotPasswordRequestScreen> {
+class _ForgotPasswordRequestScreenState
+    extends State<ForgotPasswordRequestScreen> {
   final _emailCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _sending = false;
@@ -32,75 +34,145 @@ class _ForgotPasswordRequestScreenState extends State<ForgotPasswordRequestScree
     try {
       await Supabase.instance.client.auth.resetPasswordForEmail(
         _emailCtrl.text.trim(),
-        // If you later configure deep linking, add: redirectTo: 'storytots://auth-callback',
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reset link sent. Please check your email.')),
+        const SnackBar(
+          content: Text(
+            'We sent a reset email. Open it to get your 6-digit token.',
+          ),
+        ),
       );
-      Navigator.pop(context);
     } on AuthException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send link: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
   }
 
+  void _goToReset() {
+    Navigator.pushNamed(
+      context,
+      '/reset-password',
+      arguments: _emailCtrl.text.trim(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final purple = const Color(brandPurple);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(brandPurple),
+        backgroundColor: purple,
         foregroundColor: Colors.white,
         title: const Text('Forgot Password'),
         centerTitle: true,
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text('Enter your email. We will send a password reset link.'),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                validator: _emailValidator,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
+        children: [
+          // Step card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
                 ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _sending ? null : _send,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(brandPurple),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _sending
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Send reset link'),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Forgot your password?',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                 ),
-              ),
-            ],
+                SizedBox(height: 8),
+                Text('1) Enter your email and tap Send Token.'),
+                Text('2) Open the email and copy the 6-digit reset token.'),
+                Text(
+                  '3) Return to the app and enter the token to set a new password.',
+                ),
+              ],
+            ),
           ),
-        ),
+          const SizedBox(height: 16),
+
+          // Form
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: _emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: _emailValidator,
+                  decoration: const InputDecoration(
+                    labelText: 'Email Address',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _sending ? null : _send,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: purple,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _sending
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Send Reset Token'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Shortcut to token entry
+          OutlinedButton.icon(
+            onPressed: _goToReset,
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: purple, width: 1.6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            icon: Icon(Icons.vpn_key_rounded, color: purple),
+            label: Text(
+              'I have a token — Enter it',
+              style: TextStyle(color: purple, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ),
     );
   }

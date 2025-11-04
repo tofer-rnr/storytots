@@ -18,6 +18,7 @@ import '../../data/repositories/assessment_repository.dart';
 import '../../core/services/background_music_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/difficult_words_repository.dart';
+import '../../data/services/dictionary_service.dart';
 
 class ReadingPageV3 extends StatefulWidget {
   const ReadingPageV3({
@@ -90,6 +91,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
   Map<String, String> _mispronunciationFeedback = {};
   List<String> _currentSentenceMistakes = [];
   final _difficultRepo = DifficultWordsRepository();
+  final _dictService = DictionaryService();
 
   // Language selection (implicit): 'English', 'Filipino', or 'Auto'
   String _lang = 'Auto';
@@ -120,9 +122,9 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       _lang = 'English';
       _sessionLang = 'en';
     } else {
-  // Fallback to English to ensure activity tracking always has a language
-  _lang = 'English';
-  _sessionLang = 'en';
+      // Fallback to English to ensure activity tracking always has a language
+      _lang = 'English';
+      _sessionLang = 'en';
     }
 
     _prepareSentences(initialText);
@@ -199,7 +201,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     _finishLanguageSegment();
     _activityRepo.flushQueue();
     _statusTimer?.cancel();
-  _flushTimer?.cancel();
+    _flushTimer?.cancel();
     _sentenceTimeout?.cancel();
     _stopListen();
     _tts.stop();
@@ -276,6 +278,14 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     final pronunciation = _generatePronunciationHint(word);
     await _tts.stop();
     await _tts.speak("$word is pronounced as $pronunciation");
+  }
+
+  Future<void> _speakText(String text) async {
+    try {
+      await _tts.stop();
+      if (text.trim().isEmpty) return;
+      await _tts.speak(text);
+    } catch (_) {}
   }
 
   // ---------- Speech Service ----------
@@ -482,7 +492,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       final result = results[i];
       WordStatus status;
 
-    switch (result.status) {
+      switch (result.status) {
         case MatchStatus.correct:
           status = WordStatus.correct;
           break;
@@ -492,12 +502,12 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
           // Store pronunciation feedback
           _mispronunciationFeedback[expectedWords[i]] =
               result.spokenAs ?? 'not detected';
-      _recordDifficult(expectedWords[i]);
+          _recordDifficult(expectedWords[i]);
           break;
         case MatchStatus.missing:
           status = WordStatus.incorrect;
           _currentSentenceMistakes.add(expectedWords[i]);
-      _recordDifficult(expectedWords[i]);
+          _recordDifficult(expectedWords[i]);
           break;
       }
 
@@ -526,6 +536,15 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
     try {
       await _difficultRepo.addWord(word: word, userId: uid);
+      // Also track per-story without removing global tracking
+      final storyId = widget.storyId;
+      if (storyId != null && storyId.isNotEmpty) {
+        await _difficultRepo.addWordForStory(
+          word: word,
+          storyId: storyId,
+          userId: uid,
+        );
+      }
     } catch (_) {}
   }
 
@@ -627,6 +646,20 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
         .toList();
   }
 
+  // New: helper to detect pause punctuation at end of a word
+  bool _wordHasPausePunctuation(String word) {
+    final t = word.trim();
+    if (t.isEmpty) return false;
+    const punct = {',', '.', '!', '?', ';', ':'};
+    final last = t[t.length - 1];
+    if (punct.contains(last)) return true;
+    if ((last == '"' || last == '\'') && t.length >= 2) {
+      final prev = t[t.length - 2];
+      if (punct.contains(prev)) return true;
+    }
+    return false;
+  }
+
   void _moveToNextSentence() {
     if (_currentSentence < _sentences.length - 1) {
       // When a sentence is completed, record its word count to improve WPM estimate.
@@ -682,15 +715,160 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       if (widget.storyId != null) {
         _assessmentRepo.addCompletedStory(widget.storyId!);
       }
-      // Navigate straight to Games tab
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        '/home',
-        (route) => false,
-        arguments: {'initialIndex': 1},
-      );
+      // Additive: Show unfamiliar words dialog first, then navigate as before
+      Future.microtask(() async {
+        await _showVocabularyAndNavigate();
+      });
     }
   }
 
+  // --- New: Post-story vocabulary dialog then navigate ---
+  Future<void> _showVocabularyAndNavigate() async {
+    if (!mounted) return;
+    final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final storyId = widget.storyId ?? '';
+
+    List<DifficultWord> words = const [];
+    if (storyId.isNotEmpty) {
+      try {
+        words = await _difficultRepo.topWordsForStoryDbFirst(
+          userId: uid,
+          storyId: storyId,
+          limit: 8,
+        );
+      } catch (_) {}
+    }
+
+    // If no per-story words, proceed to existing navigation
+    if (words.isEmpty) {
+      _navigateToGamesTab();
+      return;
+    }
+
+    // Build definitions (short, cached) before showing dialog
+    final items = <Map<String, String>>[];
+    for (final w in words.take(8)) {
+      final def = await _dictService.define(
+        w.word,
+        lang: (_sessionLang == 'tl') ? 'tl' : 'en',
+      );
+      items.add({'word': w.word, 'def': def});
+    }
+
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.menu_book, color: Colors.orange[700]),
+              const SizedBox(width: 8),
+              const Text('Unfamiliar Words'),
+            ],
+          ),
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'From this story:',
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...items.map(
+                  (e) => Container(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange[200]!),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    e['word'] ?? '',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange[900],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  InkWell(
+                                    onTap: () =>
+                                        _speakPronunciation(e['word'] ?? ''),
+                                    child: Icon(
+                                      Icons.volume_up,
+                                      size: 18,
+                                      color: Colors.orange[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                e['def'] ?? '',
+                                style: TextStyle(color: Colors.grey[800]),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () => _speakText(e['def'] ?? ''),
+                          child: Icon(
+                            Icons.record_voice_over,
+                            size: 20,
+                            color: Colors.orange[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _navigateToGamesTab();
+              },
+              child: const Text('Play a Game'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _navigateToGamesTab() {
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+      arguments: {'initialIndex': 1},
+    );
+  }
+
+  // --- Restored helpers: feedback and pronunciation hint ---
   void _showSentenceFeedback() {
     if (_currentSentenceMistakes.isEmpty) return;
 
@@ -1193,6 +1371,30 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
                     ],
                   ),
 
+                  // New: gentle tip about pausing at punctuation when present in expected sentence
+                  if (RegExp(r'[,.!?;:]').hasMatch(_expectedSentence)) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.pause_circle_outline,
+                          size: 18,
+                          color: Color(brandPurple),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Tip: Pause briefly at commas, periods, and other punctuation.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+
                   // Pronunciation guidance for incorrect words
                   if (_incorrectWords.isNotEmpty) ...[
                     const SizedBox(height: 12),
@@ -1336,15 +1538,31 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
           color: backgroundColor,
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Text(
-          word,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: status == WordStatus.current
-                ? FontWeight.bold
-                : FontWeight.normal,
-            color: textColor,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              word,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: status == WordStatus.current
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+                color: textColor,
+              ),
+            ),
+            if (_wordHasPausePunctuation(word)) ...[
+              const SizedBox(width: 4),
+              Tooltip(
+                message: 'Pause',
+                child: Icon(
+                  Icons.pause_circle_filled,
+                  size: 14,
+                  color: Color(brandPurple),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

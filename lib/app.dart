@@ -12,7 +12,6 @@ import 'features/auth/screens/forgot_password_update_screen.dart';
 import 'features/interests/screens/onboarding_flow.dart';
 import 'features/shell/main_tabs.dart';
 import 'features/games/games_screen.dart';
-import 'features/settings/screens/profile_screen.dart';
 import 'core/widgets/global_click_sound.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -41,7 +40,6 @@ class StoryTotsApp extends StatelessWidget {
           '/forgot-password': (_) => const ForgotPasswordRequestScreen(),
           '/reset-password': (_) => const ForgotPasswordUpdateScreen(),
           '/onboarding': (_) => const OnboardingFlow(),
-          '/profile': (_) => const ProfileScreen(),
           // Use onGenerateRoute for '/home' to support arguments
           '/games': (_) => const GamesScreen(),
         },
@@ -55,18 +53,15 @@ class StoryTotsApp extends StatelessWidget {
           if (settings.name == '/home') {
             final args = settings.arguments;
             int? initialIndex;
-            if (args is Map && args['initialIndex'] is int) {
-              initialIndex = args['initialIndex'] as int;
-            } else if (args is int) {
-              initialIndex = args;
+            if (args is Map && args['tab'] is int) {
+              initialIndex = args['tab'] as int?;
             }
             return MaterialPageRoute(
-              builder: (_) => MainTabs(initialIndex: initialIndex),
+              builder: (_) => MainTabs(initialIndex: initialIndex ?? 0),
             );
           }
           return null;
         },
-        navigatorObservers: [_PasswordRecoveryNavigatorObserver()],
       ),
     );
   }
@@ -132,13 +127,11 @@ class _MyAppState extends State<MyApp> {
           if (settings.name == '/home') {
             final args = settings.arguments;
             int? initialIndex;
-            if (args is Map && args['initialIndex'] is int) {
-              initialIndex = args['initialIndex'] as int;
-            } else if (args is int) {
-              initialIndex = args;
+            if (args is Map && args['tab'] is int) {
+              initialIndex = args['tab'] as int?;
             }
             return MaterialPageRoute(
-              builder: (_) => MainTabs(initialIndex: initialIndex),
+              builder: (_) => MainTabs(initialIndex: initialIndex ?? 0),
             );
           }
           return null;
