@@ -19,6 +19,7 @@ import '../../core/services/background_music_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/difficult_words_repository.dart';
 import '../../data/services/dictionary_service.dart';
+import '../../data/services/curated_vocabulary.dart';
 
 class ReadingPageV3 extends StatefulWidget {
   const ReadingPageV3({
@@ -728,8 +729,17 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
     final storyId = widget.storyId ?? '';
 
-    List<DifficultWord> words = const [];
+    // 1) Try curated list first (e.g., alamat-ng-saging provided by product)
+    Map<String, String> curated = {};
     if (storyId.isNotEmpty) {
+      curated = CuratedVocabulary.forStory(
+        storyId,
+        lang: (_sessionLang == 'tl') ? 'tl' : 'en',
+      );
+    }
+
+    List<DifficultWord> words = const [];
+    if (curated.isEmpty && storyId.isNotEmpty) {
       try {
         words = await _difficultRepo.topWordsForStoryDbFirst(
           userId: uid,
@@ -739,20 +749,26 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
       } catch (_) {}
     }
 
-    // If no per-story words, proceed to existing navigation
-    if (words.isEmpty) {
+    // If nothing to show, proceed
+    if (curated.isEmpty && words.isEmpty) {
       _navigateToGamesTab();
       return;
     }
 
-    // Build definitions (short, cached) before showing dialog
+    // Build items either from curated or tracked difficult words
     final items = <Map<String, String>>[];
-    for (final w in words.take(8)) {
-      final def = await _dictService.define(
-        w.word,
-        lang: (_sessionLang == 'tl') ? 'tl' : 'en',
-      );
-      items.add({'word': w.word, 'def': def});
+    if (curated.isNotEmpty) {
+      curated.entries.take(12).forEach((e) {
+        items.add({'word': e.key, 'def': e.value});
+      });
+    } else {
+      for (final w in words.take(8)) {
+        final def = await _dictService.define(
+          w.word,
+          lang: (_sessionLang == 'tl') ? 'tl' : 'en',
+        );
+        items.add({'word': w.word, 'def': def});
+      }
     }
 
     if (!mounted) return;

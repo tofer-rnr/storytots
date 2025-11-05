@@ -6,11 +6,14 @@ class EditProfileScreen extends StatefulWidget {
     super.key,
     required this.currentInterests,
     required this.currentAvatarKeyOrPath,
+    this.currentBirthDate,
   });
 
   final List<String> currentInterests;
   // Can be an avatar key (e.g., 'boy') or full asset path (assets/images/boy.png)
   final String currentAvatarKeyOrPath;
+  // New: provide current birth date for editing
+  final DateTime? currentBirthDate;
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -41,6 +44,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late Set<String> _selectedTopics;
   String? _selectedAvatarKey; // store the key (boy, cat, ...)
 
+  DateTime? _birthDate;
+
   @override
   void initState() {
     super.initState();
@@ -52,6 +57,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           orElse: () => const MapEntry('boy', 'assets/images/boy.png'),
         )
         .key;
+    _birthDate = widget.currentBirthDate;
   }
 
   @override
@@ -99,6 +105,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             const SizedBox(height: 20),
             const Text(
+              'Birthdate',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: _pickBirthDate,
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.cake_outlined),
+                ),
+                child: Text(
+                  _birthDate == null
+                      ? 'Select birthdate'
+                      : _fmtDate(_birthDate!),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            const Text(
               'Select Interests (max 3)',
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
@@ -137,12 +164,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  Future<void> _pickBirthDate() async {
+    final now = DateTime.now();
+    final initial = _birthDate ?? DateTime(now.year - 7, now.month, now.day);
+    final first = DateTime(now.year - 18, 1, 1); // min age ~ 2-18 years range
+    final last = DateTime(now.year - 2, 12, 31);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: first,
+      lastDate: last,
+    );
+    if (picked != null) {
+      setState(() => _birthDate = picked);
+    }
+  }
+
+  String _fmtDate(DateTime d) {
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
   Future<void> _save() async {
     try {
       if (_selectedAvatarKey != null) {
         await _repo.updateAvatar(_selectedAvatarKey!);
       }
       await _repo.updateInterests(_selectedTopics.toList());
+      if (_birthDate != null) {
+        await _repo.updateBirthDate(_birthDate!);
+      }
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {

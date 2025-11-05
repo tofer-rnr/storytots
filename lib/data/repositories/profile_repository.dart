@@ -36,7 +36,9 @@ class ProfileRepository {
         .maybeSingle();
 
     if (existing == null) {
-      final birthStr = birth != null ? birth.toIso8601String().split('T').first : null;
+      final birthStr = birth != null
+          ? birth.toIso8601String().split('T').first
+          : null;
       await _db.from(_table).insert({
         'id': uid,
         'email': email ?? _db.auth.currentUser?.email,
@@ -62,6 +64,13 @@ class ProfileRepository {
     await _db.from(_table).update({'avatar_key': avatarKey}).eq('id', uid);
   }
 
+  // New: update birth date (used for editing age)
+  Future<void> updateBirthDate(DateTime birth) async {
+    final uid = _db.auth.currentUser!.id;
+    final iso = birth.toIso8601String().split('T').first; // YYYY-MM-DD
+    await _db.from(_table).update({'birth_date': iso}).eq('id', uid);
+  }
+
   Future<void> setOnboardingComplete(bool value) async {
     final uid = _db.auth.currentUser!.id;
     await _db.from(_table).update({'onboarding_complete': value}).eq('id', uid);
@@ -73,7 +82,9 @@ class ProfileRepository {
 
     return await _db
         .from(_table)
-        .select('id, email, first_name, last_name, birth_date, goal, interests, avatar_key, onboarding_complete')
+        .select(
+          'id, email, first_name, last_name, birth_date, goal, interests, avatar_key, onboarding_complete',
+        )
         .eq('id', uid)
         .maybeSingle();
   }
