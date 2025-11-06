@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:storytots/data/repositories/profile_repository.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -45,6 +46,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _selectedAvatarKey; // store the key (boy, cat, ...)
 
   DateTime? _birthDate;
+  final TextEditingController _ageController = TextEditingController();
 
   @override
   void initState() {
@@ -58,6 +60,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         )
         .key;
     _birthDate = widget.currentBirthDate;
+    // Initialize age text from birthdate if available
+    if (_birthDate != null) {
+      _ageController.text = _ageFrom(_birthDate!).toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -101,6 +113,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 );
               }).toList(),
+            ),
+
+            const SizedBox(height: 20),
+            const Text(
+              'Age',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _ageController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.cake),
+                hintText: 'Enter age (2-18)',
+              ),
+              onChanged: _onAgeChanged,
             ),
 
             const SizedBox(height: 20),
@@ -164,6 +194,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  void _onAgeChanged(String value) {
+    final now = DateTime.now();
+    final age = int.tryParse(value);
+    if (age == null) return;
+    // Keep within a reasonable child range
+    if (age < 2 || age > 18) return;
+    final baseMonth = _birthDate?.month ?? now.month;
+    final baseDay = _birthDate?.day ?? now.day;
+    final year = now.year - age;
+    setState(() {
+      _birthDate = _withSafeDay(year, baseMonth, baseDay);
+    });
+  }
+
+  DateTime _withSafeDay(int year, int month, int day) {
+    final lastDay = DateTime(year, month + 1, 0).day;
+    final safeDay = day.clamp(1, lastDay);
+    return DateTime(year, month, safeDay);
+  }
+
+  int _ageFrom(DateTime b) {
+    final now = DateTime.now();
+    int age = now.year - b.year;
+    if (now.month < b.month || (now.month == b.month && now.day < b.day)) {
+      age--;
+    }
+    return age;
+  }
+
   Future<void> _pickBirthDate() async {
     final now = DateTime.now();
     final initial = _birthDate ?? DateTime(now.year - 7, now.month, now.day);
@@ -176,7 +235,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       lastDate: last,
     );
     if (picked != null) {
-      setState(() => _birthDate = picked);
+      setState(() {
+        _birthDate = picked;
+        _ageController.text = _ageFrom(picked).toString();
+      });
     }
   }
 

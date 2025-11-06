@@ -787,78 +787,87 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
               const Text('Unfamiliar Words'),
             ],
           ),
-          content: SizedBox(
-            width: 360,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'From this story:',
-                    style: TextStyle(color: Colors.grey[700]),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ...items.map(
-                  (e) => Container(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.orange[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange[200]!),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              // Cap dialog height so content can scroll on small screens
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+              minWidth: 360,
+            ),
+            child: SingleChildScrollView(
+              child: SizedBox(
+                width: 360,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'From this story:',
+                        style: TextStyle(color: Colors.grey[700]),
+                      ),
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                    const SizedBox(height: 12),
+                    ...items.map(
+                      (e) => Container(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.orange[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange[200]!),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    e['word'] ?? '',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.orange[900],
-                                    ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        e['word'] ?? '',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.orange[900],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      InkWell(
+                                        onTap: () =>
+                                            _speakPronunciation(e['word'] ?? ''),
+                                        child: Icon(
+                                          Icons.volume_up,
+                                          size: 18,
+                                          color: Colors.orange[700],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 6),
-                                  InkWell(
-                                    onTap: () =>
-                                        _speakPronunciation(e['word'] ?? ''),
-                                    child: Icon(
-                                      Icons.volume_up,
-                                      size: 18,
-                                      color: Colors.orange[700],
-                                    ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    e['def'] ?? '',
+                                    style: TextStyle(color: Colors.grey[800]),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                e['def'] ?? '',
-                                style: TextStyle(color: Colors.grey[800]),
+                            ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: () => _speakText(e['def'] ?? ''),
+                              child: Icon(
+                                Icons.record_voice_over,
+                                size: 20,
+                                color: Colors.orange[700],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        InkWell(
-                          onTap: () => _speakText(e['def'] ?? ''),
-                          child: Icon(
-                            Icons.record_voice_over,
-                            size: 20,
-                            color: Colors.orange[700],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           actions: [
