@@ -116,10 +116,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
 
             const SizedBox(height: 20),
-            const Text(
-              'Age',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
+            const Text('Age', style: TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             TextField(
               controller: _ageController,

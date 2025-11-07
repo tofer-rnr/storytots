@@ -191,7 +191,8 @@ class CuratedVocabulary {
         'transformation': 'big change',
         'acknowledged': 'recognized or accepted',
         'embracing': 'accepting something willingly',
-        'rewarding experiences': 'good things you get from doing something difficult',
+        'rewarding experiences':
+            'good things you get from doing something difficult',
       },
       'tl': {
         'nayon': 'maliit na lugar o village',
@@ -273,7 +274,8 @@ class CuratedVocabulary {
       'en': {
         'carabao': 'a big farm animal (like a water buffalo)',
         'bathe': 'to take a bath / wash in water',
-        'shell': 'a small hard animal found near water (like a snail without head showing)',
+        'shell':
+            'a small hard animal found near water (like a snail without head showing)',
         'slow': 'not fast',
         'beat you (in a race)': 'win against you',
         'bank (riverbank)': 'land beside a river',
@@ -564,7 +566,8 @@ class CuratedVocabulary {
       },
       'tl': {
         'Unggoy': 'uri ng hayop na mahilig umakyat sa puno (monkey)',
-        'Pagong': 'hayop na may matigas na balat o kabibe at mabagal kumilos (turtle)',
+        'Pagong':
+            'hayop na may matigas na balat o kabibe at mabagal kumilos (turtle)',
         'malungkot': 'nalulungkot, hindi masaya',
         'problemado': 'may suliranin o iniisip na problema',
         'tabi ng ilog': 'gilid o pampang ng ilog',
@@ -589,7 +592,8 @@ class CuratedVocabulary {
         'matutulis': 'may matalim na dulo (pwedeng makasakit)',
         'kawayan': 'matibay na halaman na ginagamit sa paggawa (bamboo)',
         'tinulos / itinulos': 'inilagay nang patulis para sumaksak sa ilalim',
-        'buwaya': 'malaking hayop sa tubig na may malaking bibig at ngipin (crocodile)',
+        'buwaya':
+            'malaking hayop sa tubig na may malaking bibig at ngipin (crocodile)',
         'nahulog': 'nahulog pababa o bumagsak',
         'pira-piraso': 'hiwa-hiwang maliliit na piraso',
         'bangkay': 'patay na katawan ng hayop o tao',
@@ -597,12 +601,14 @@ class CuratedVocabulary {
         'pinatuyo': 'sinimulang tuyuin sa araw para tumagal',
         'ipinagbili': 'ibinigay kapalit ng pera o kapalit na bagay',
         'kapalit': 'bagay o biyaya na inibigan bilang pamalit',
-        'palakol': 'maliit na palakol o baraw na pambutas at pambali (hatchet/axe)',
+        'palakol':
+            'maliit na palakol o baraw na pambutas at pambali (hatchet/axe)',
         'peklat': 'marka sa balat pagkatapos gumaling ang sugat (scars)',
         'ihulog sa tubig': 'itapon o itulak pababa sa tubig',
         'lumubog': 'bumaba sa ilalim ng tubig',
         'lumulutang': 'sumulpot pabalik sa ibabaw ng tubig',
-        'ulang': 'uri ng alimango o hipon na nahuhuli sa tubig (lobster / freshwater prawn)',
+        'ulang':
+            'uri ng alimango o hipon na nahuhuli sa tubig (lobster / freshwater prawn)',
         'tali / lubid': 'bagay na ginagamit para itali o higpitan',
         'baywang': 'bahagi ng katawan sa gitna (waist)',
         'tumalon / plunge': 'sumisid o tumalon papasok sa tubig',
@@ -697,12 +703,15 @@ class CuratedVocabulary {
     // New curated list for Why the Sky Is High
     'why-the-sky-is-high': {
       'en': {
-        'Northern India': 'A place far away, located in the upper part of the country called India.',
-        'Village': 'A small place where a few people live together, like a tiny town.',
+        'Northern India':
+            'A place far away, located in the upper part of the country called India.',
+        'Village':
+            'A small place where a few people live together, like a tiny town.',
         'Hut': 'A small and simple house made of mud, wood, or straw.',
         'Monsoon': 'A season when there is a lot of rain.',
         'Soil': 'The dirt or ground where plants grow.',
-        'Dust': 'Tiny dirt pieces that float in the air and can make you sneeze.',
+        'Dust':
+            'Tiny dirt pieces that float in the air and can make you sneeze.',
         'Choked': 'When you cough because something blocks your throat.',
         'Suffered': 'To feel pain or have a hard time.',
         'Swept': 'Past tense of "sweep"; cleaning by using a broom.',
@@ -730,8 +739,10 @@ class CuratedVocabulary {
         'Nabulunan': 'Na-choke o hindi makahinga nang saglit',
         'Lalamunan': 'Throat',
         'Nagwawalis': 'Naglilinis gamit ang walis',
-        'Kumalakat / Umiikot (alikabok)': 'Lalong kumalat, nagliparan sa hangin',
-        'Kiniliti (ang ilong)': 'Na-tickle o parang may gumagalaw kaya gusto mong bumahing',
+        'Kumalakat / Umiikot (alikabok)':
+            'Lalong kumalat, nagliparan sa hangin',
+        'Kiniliti (ang ilong)':
+            'Na-tickle o parang may gumagalaw kaya gusto mong bumahing',
         'Yumanig': 'Umuga o lumindol',
         'Nagtakip ng ulo': 'Tinakpan ang ulo (para protektahan)',
         'Malalaking patak ng ulan': 'Big raindrops',

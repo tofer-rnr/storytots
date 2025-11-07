@@ -12,6 +12,7 @@ import 'features/auth/screens/forgot_password_update_screen.dart';
 import 'features/interests/screens/onboarding_flow.dart';
 import 'features/shell/main_tabs.dart';
 import 'features/games/games_screen.dart';
+import 'features/settings/screens/profile_screen.dart';
 import 'core/widgets/global_click_sound.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -42,6 +43,7 @@ class StoryTotsApp extends StatelessWidget {
           '/onboarding': (_) => const OnboardingFlow(),
           // Use onGenerateRoute for '/home' to support arguments
           '/games': (_) => const GamesScreen(),
+          '/profile': (_) => const ProfileScreen(),
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/verify-email') {
@@ -116,6 +118,7 @@ class _MyAppState extends State<MyApp> {
           '/onboarding': (_) => const OnboardingFlow(),
           // Use onGenerateRoute for '/home' to support arguments
           '/games': (_) => const GamesScreen(),
+          '/profile': (_) => const ProfileScreen(),
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/verify-email') {
