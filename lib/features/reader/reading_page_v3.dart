@@ -876,7 +876,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
                 Navigator.of(context).pop();
                 _navigateToGamesTab();
               },
-              child: const Text('Play a Game'),
+              child: const Text('Go to Assessment'),
             ),
           ],
         );
@@ -889,7 +889,7 @@ class _ReadingPageV3State extends State<ReadingPageV3> {
     Navigator.of(context).pushNamedAndRemoveUntil(
       '/home',
       (route) => false,
-      arguments: {'initialIndex': 1},
+      arguments: {'tab': 1},
     );
   }
 
