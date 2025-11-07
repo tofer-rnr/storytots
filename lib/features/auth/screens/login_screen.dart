@@ -9,6 +9,7 @@ import '../../../../data/repositories/reading_activity_repository.dart';
 import '../../../../data/repositories/progress_repository.dart';
 import '../../../../data/repositories/difficult_words_repository.dart';
 import '../../../../data/repositories/assessment_repository.dart';
+import '../../../../core/widgets/animated_brand_art.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -154,6 +155,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // NEW: animated brand art above the logo
+                    const AnimatedBrandArt(size: 110),
+                    const SizedBox(height: 16),
+
                     // Logo at top
                     Image.asset(
                       'assets/images/storytots_logo_front.png',
@@ -188,7 +193,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   value: _selectedMode,
                                   onChanged: _loading
                                       ? null
-                                      : (v) => setState(() => _selectedMode = v),
+                                      : (v) =>
+                                            setState(() => _selectedMode = v),
                                 ),
                                 const SizedBox(height: 14),
                                 // Email
@@ -259,14 +265,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
 
                     const SizedBox(height: 16),
-
-                
-
-                    const SizedBox(height: 14),
-
-                 
-
-                    const SizedBox(height: 22),
 
                     // Main Login button (purple pill with shadow)
                     SizedBox(
@@ -354,7 +352,7 @@ class _RoleSegmentedToggle extends StatelessWidget {
                       color: Colors.black26,
                       blurRadius: 6,
                       offset: Offset(0, 2),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -403,7 +401,11 @@ class _RoleSegmentedToggle extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18, color: selected ? const Color(brandPurple) : Colors.white),
+              Icon(
+                icon,
+                size: 18,
+                color: selected ? const Color(brandPurple) : Colors.white,
+              ),
               const SizedBox(width: 6),
               Text(
                 label,

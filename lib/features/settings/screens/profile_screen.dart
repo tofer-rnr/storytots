@@ -21,7 +21,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   LanguageStats? _today;
   ProfileStats? _stats;
   int _gameMin = 0;
-  
 
   @override
   void initState() {
@@ -42,7 +41,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final Map<String, dynamic>? row = await client
         .from('profiles')
-        .select('email, first_name, last_name, birth_date, avatar_key, interests')
+        .select(
+          'email, first_name, last_name, birth_date, avatar_key, interests',
+        )
         .eq('id', user.id)
         .maybeSingle();
 
@@ -194,6 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       builder: (_) => EditProfileScreen(
                                         currentInterests: p.interests,
                                         currentAvatarKeyOrPath: p.avatarAsset,
+                                        currentBirthDate: p.birthday,
                                       ),
                                     ),
                                   );
@@ -283,10 +285,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 12),
 
                     // Time Spent (reading today) + WPM
-                    _timeSpent(game: _gameMin, reading: _today?.totalMinutes ?? 0),
+                    _timeSpent(
+                      game: _gameMin,
+                      reading: _today?.totalMinutes ?? 0,
+                    ),
                     const SizedBox(height: 10),
-                    if (_today != null)
-                      _wpmCard(_today!.wpm),
+                    if (_today != null) _wpmCard(_today!.wpm),
 
                     const SizedBox(height: 12),
 

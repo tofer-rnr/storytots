@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants.dart';
+import '../../../core/widgets/animated_brand_art.dart';
 import '../../../data/repositories/stories_repository.dart';
 import '../../reader/story_details_screen.dart';
 import '../../reader/reading_page_v3.dart';
@@ -194,6 +195,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ListView(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                       children: [
+                        // Top animated brand header (same style as splash)
+                        Center(child: AnimatedBrandArt(size: 120)),
+                        const SizedBox(height: 16),
+
                         // Search
                         Container(
                           decoration: BoxDecoration(
