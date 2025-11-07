@@ -1,14 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:storytots/data/repositories/auth_cache_repository.dart';
+import 'package:storytots/data/repositories/role_mode_repository.dart';
 import 'package:storytots/core/constants.dart';
 import 'package:storytots/features/settings/screens/profile_screen.dart';
+import 'package:storytots/features/settings/screens/parent_report_screen.dart';
 import 'about_screen.dart';
 import 'help_screen.dart';
 import 'sound_settings_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isParent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRole();
+  }
+
+  Future<void> _loadRole() async {
+    final parent = await RoleModeRepository().isParentMode();
+    if (!mounted) return;
+    setState(() => _isParent = parent);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +100,17 @@ class SettingsScreen extends StatelessWidget {
                       label: 'PROFILE',
                       onTap: () => _openProfile(context),
                     ),
+                    const SizedBox(height: 14),
+                    if (_isParent)
+                      _SettingsActionCard(
+                        label: 'REPORTS',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ParentReportScreen(),
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 14),
                     _SettingsActionCard(
                       label: 'SOUND',
@@ -168,6 +200,8 @@ class SettingsScreen extends StatelessWidget {
       final authCache = AuthCacheRepository();
       await authCache.clearCache();
       await Supabase.instance.client.auth.signOut();
+      // Clear role mode
+      await RoleModeRepository().clear();
 
       if (context.mounted) {
         Navigator.of(

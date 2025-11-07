@@ -4,15 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:storytots/core/constants.dart';
 import 'package:storytots/data/repositories/reading_activity_repository.dart';
 import 'package:storytots/data/services/profile_stats_service.dart';
+import 'package:storytots/data/repositories/game_activity_repository.dart';
 import 'edit_profile_screen.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:share_plus/share_plus.dart';
-import 'package:storytots/data/repositories/assessment_repository.dart';
-import 'package:storytots/data/repositories/stories_repository.dart';
-import 'package:storytots/data/services/report_service.dart';
+import 'badges_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -26,7 +20,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _activityRepo = ReadingActivityRepository();
   LanguageStats? _today;
   ProfileStats? _stats;
-  bool _sending = false;
+  int _gameMin = 0;
+  
 
   @override
   void initState() {
@@ -34,6 +29,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _future = _loadProfile();
     _loadActivity();
     _loadStats();
+    GameActivityRepository().getTodayGameMinutes().then((v) {
+      if (!mounted) return;
+      setState(() => _gameMin = v);
+    });
   }
 
   Future<_ProfileData> _loadProfile() async {
@@ -43,14 +42,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final Map<String, dynamic>? row = await client
         .from('profiles')
-        .select(
-          'email, first_name, last_name, birth_date, avatar_key, interests',
-        )
+        .select('email, first_name, last_name, birth_date, avatar_key, interests')
         .eq('id', user.id)
         .maybeSingle();
 
     final birthday = _parseDate(row?['birth_date']);
-    final age = birthday == null ? '—' : _ageFrom(birthday).toString();
+    final age = birthday == null ? '\u2014' : _ageFrom(birthday).toString();
 
     return _ProfileData(
       displayName: _nameFrom(row, user.email),
@@ -71,7 +68,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadStats() async {
-    // Ensure any queued offline activity is synced to Supabase first
     await _activityRepo.flushQueue();
     final s = await ProfileStatsService().getStatsDbFirst();
     if (!mounted) return;
@@ -82,180 +78,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _future = _loadProfile());
     _loadActivity();
     _loadStats();
-  }
-
-  Future<void> _sendReport() async {
-    if (_sending) return;
-    setState(() => _sending = true);
-    try {
-      // Ensure latest stats
-      await _activityRepo.flushQueue();
-      final stats = await ProfileStatsService().getStatsDbFirst();
-      final profile = await _future;
-
-      // Completed books
-      final assessRepo = AssessmentRepository();
-      final completedIds = await assessRepo.getCompletedStoryIds();
-      final storiesRepo = StoriesRepository();
-      final completedStories = completedIds.isEmpty
-          ? <Story>[]
-          : await storiesRepo.listByIds(completedIds);
-
-      // Build PDF
-      final doc = pw.Document();
-      final dateStr = DateTime.now().toIso8601String().split('T').first;
-
-      pw.Widget _header(String text) => pw.Padding(
-        padding: const pw.EdgeInsets.only(top: 12, bottom: 6),
-        child: pw.Text(
-          text,
-          style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
-        ),
-      );
-
-      pw.Widget _kv(String k, String v) => pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(k),
-          pw.Text(v, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-        ],
-      );
-
-      String _fmtDate(DateTime d) {
-        final y = d.year.toString().padLeft(4, '0');
-        final m = d.month.toString().padLeft(2, '0');
-        final day = d.day.toString().padLeft(2, '0');
-        return '$y-$m-$day';
-      }
-
-      String _fmtMin(int m) => '$m min';
-
-      doc.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(24),
-          build: (context) => [
-            pw.Text(
-              'StoryTots Progress Report',
-              style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
-            ),
-            pw.SizedBox(height: 4),
-            pw.Text('Generated on $dateStr'),
-            pw.SizedBox(height: 16),
-
-            // Child info
-            _header('Child'),
-            pw.Column(
-              children: [
-                _kv('Name', profile.displayName),
-                _kv('Email', profile.email),
-                _kv('Age', profile.ageLabel),
-              ],
-            ),
-
-            // Metrics summary
-            _header('Reading Metrics'),
-            pw.Column(
-              children: [
-                _kv('All-time', _fmtMin(stats.totalMinutesAllTime)),
-                _kv('Last 7 days', _fmtMin(stats.totalMinutes7d)),
-                _kv('EN (7d)', _fmtMin(stats.enMinutes7d)),
-                _kv('TL (7d)', _fmtMin(stats.tlMinutes7d)),
-                _kv('Streak', '${stats.streakDays} days'),
-                _kv(
-                  'Last session',
-                  stats.lastSessionAt == null
-                      ? '—'
-                      : _fmtDate(stats.lastSessionAt!),
-                ),
-              ],
-            ),
-
-            // Weekly breakdown
-            _header('Weekly Breakdown (oldest → today)'),
-            pw.Table.fromTextArray(
-              headers: const ['Date', 'Total', 'EN', 'TL'],
-              data: stats.weekly
-                  .map(
-                    (d) => [
-                      _fmtDate(d.date),
-                      _fmtMin(d.totalMinutes),
-                      _fmtMin(d.enMinutes),
-                      _fmtMin(d.tlMinutes),
-                    ],
-                  )
-                  .toList(),
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              headerDecoration: const pw.BoxDecoration(
-                color: PdfColors.grey300,
-              ),
-              cellAlignment: pw.Alignment.centerLeft,
-            ),
-
-            // Completed books
-            _header('Completed Books'),
-            if (completedStories.isEmpty)
-              pw.Text('None yet')
-            else
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: completedStories
-                    .map((s) => pw.Bullet(text: s.title))
-                    .toList(),
-              ),
-          ],
-        ),
-      );
-
-      final bytes = await doc.save();
-
-      // Upload to Supabase Storage and get a signed URL
-      final signer = ReportService();
-      final signedUrl = await signer.uploadReportAndGetSignedUrl(
-        bytes,
-        suggestedName: 'StoryTots_Report_${dateStr}.pdf',
-      );
-
-      // Fire push notification via Edge Function (non-blocking)
-      await signer.notifyParents(
-        signedUrl: signedUrl,
-        childName: profile.displayName,
-      );
-
-      // Also save locally and open share sheet (kept from previous behavior)
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/StoryTots_Report_$dateStr.pdf');
-      await file.writeAsBytes(bytes, flush: true);
-
-      await Share.shareXFiles(
-        [
-          XFile(
-            file.path,
-            mimeType: 'application/pdf',
-            name: 'StoryTots_Report_$dateStr.pdf',
-          ),
-        ],
-        subject: 'StoryTots Progress Report',
-        text:
-            'StoryTots Progress Report for ${profile.displayName}\nDownload link: $signedUrl',
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Report uploaded and notifications sent.'),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not send report: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
   }
 
   @override
@@ -277,20 +99,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         actions: [
           IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh)),
-          IconButton(
-            tooltip: 'Send Report',
-            onPressed: _sending ? null : _sendReport,
-            icon: _sending
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Icon(Icons.send),
-          ),
         ],
       ),
       body: FutureBuilder<_ProfileData>(
@@ -474,12 +282,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Time Spent (reading today)
-                    _timeSpent(game: 0, reading: _today?.totalMinutes ?? 0),
+                    // Time Spent (reading today) + WPM
+                    _timeSpent(game: _gameMin, reading: _today?.totalMinutes ?? 0),
+                    const SizedBox(height: 10),
+                    if (_today != null)
+                      _wpmCard(_today!.wpm),
 
                     const SizedBox(height: 12),
 
-                    _badgesCta(),
+                    _badgesCta(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BadgesScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -905,14 +725,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  static Widget _badgesCta() {
+  static Widget _badgesCta({required VoidCallback onTap}) {
     return SizedBox(
       height: 48,
       child: Material(
         color: const Color(brandPurple),
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
-          onTap: null,
+          onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -978,6 +798,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(18),
       ),
       child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+    );
+  }
+
+  static Widget _wpmCard(int wpm) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          const Icon(Icons.speed, color: Color(brandPurple)),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Reading is fun! Your pace today',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          Text('$wpm WPM', style: const TextStyle(fontWeight: FontWeight.w900)),
+        ],
+      ),
     );
   }
 }

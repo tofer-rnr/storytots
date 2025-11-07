@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants.dart';
@@ -13,11 +14,31 @@ class AuthSplashScreen extends StatefulWidget {
 
 class _AuthSplashScreenState extends State<AuthSplashScreen> {
   final _authCache = AuthCacheRepository();
+  final List<String> _frames = const [
+    'assets/images/icon.png',
+    'assets/images/icon1.png',
+    'assets/images/icon2.png',
+  ];
+  int _frameIndex = 0;
+  Timer? _frameTimer;
 
   @override
   void initState() {
     super.initState();
+    // Start lightweight frame animation for splash art
+    _frameTimer = Timer.periodic(const Duration(milliseconds: 420), (t) {
+      if (!mounted) return;
+      setState(() {
+        _frameIndex = (_frameIndex + 1) % _frames.length;
+      });
+    });
     _checkAuthStatus();
+  }
+
+  @override
+  void dispose() {
+    _frameTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _checkAuthStatus() async {
@@ -86,6 +107,10 @@ class _AuthSplashScreenState extends State<AuthSplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+  // Compute a responsive size for the splash art
+  final size = MediaQuery.of(context).size;
+  final double artSize = (size.shortestSide * 0.45).clamp(140.0, 360.0).toDouble();
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -99,7 +124,7 @@ class _AuthSplashScreenState extends State<AuthSplashScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo
+              // Animated splash art (cycles icon.png, icon1.png, icon2.png)
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -113,9 +138,27 @@ class _AuthSplashScreenState extends State<AuthSplashScreen> {
                     ),
                   ],
                 ),
-                child: Image.asset(
-                  'assets/images/storytots_logo_front.png',
-                  height: 80,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, anim) => FadeTransition(
+                    opacity: anim,
+                    child: child,
+                  ),
+                  child: SizedBox(
+                    width: artSize,
+                    height: artSize,
+                    child: Image.asset(
+                      _frames[_frameIndex],
+                      key: ValueKey(_frameIndex),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        'assets/images/storytots_logo_front.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
                 ),
               ),
 
