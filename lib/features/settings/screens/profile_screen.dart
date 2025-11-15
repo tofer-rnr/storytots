@@ -26,8 +26,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _future = _loadProfile();
-    _loadActivity();
-    _loadStats();
+  _loadActivity();
+  _loadStats();
     GameActivityRepository().getTodayGameMinutes().then((v) {
       if (!mounted) return;
       setState(() => _gameMin = v);
@@ -63,7 +63,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadActivity() async {
-    final stats = await _activityRepo.getTodayLanguageStats();
+    // Flush any pending reads first so DB view is fresh
+    try { await _activityRepo.flushQueue(); } catch (_) {}
+    final stats = await _activityRepo.getTodayLanguageStatsDbFirst();
     if (!mounted) return;
     setState(() => _today = stats);
   }
@@ -79,6 +81,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _future = _loadProfile());
     _loadActivity();
     _loadStats();
+    GameActivityRepository().getTodayGameMinutes().then((v) {
+      if (!mounted) return;
+      setState(() => _gameMin = v);
+    });
   }
 
   @override
@@ -279,8 +285,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Activity Report (still uses today percent)
+                    // Activity Report (DB-first today percent)
                     _activityCard((_today?.activityPercent ?? 0.0)),
+                    if ((_today?.totalMinutes ?? 0) == 0) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tip: Start a reading session to see today\'s stats update here.',
+                        style: TextStyle(color: Colors.black54, fontSize: 12),
+                      ),
+                    ],
 
                     const SizedBox(height: 12),
 

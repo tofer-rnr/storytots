@@ -87,6 +87,108 @@ flutter:
     - assets/stories/_normalized_stories/Legend_of_the_PineApple/en/
     - assets/stories/_normalized_stories/Legend_of_the_PineApple/tl/pages/
     - assets/stories/_normalized_stories/Legend_of_the_PineApple/tl/
+  # Explicitly include story folders with spaces (non-normalized names)
+    - assets/stories/The Carabao and the Shell/en/pages/
+    - assets/stories/The Carabao and the Shell/en/
+    - assets/stories/The Carabao and the Shell/tl/pages/
+    - assets/stories/The Carabao and the Shell/tl/
+    - assets/stories/The Legend of the Bitter Gourd/en/pages/
+    - assets/stories/The Legend of the Bitter Gourd/en/
+    - assets/stories/The Legend of the Bitter Gourd/tl/pages/
+    - assets/stories/The Legend of the Bitter Gourd/tl/
+    - assets/stories/The Legend of the Rainbow/en/pages/
+    - assets/stories/The Legend of the Rainbow/en/
+    - assets/stories/The Legend of the Rainbow/tl/pages/
+    - assets/stories/The Legend of the Rainbow/tl/
+    - assets/stories/The Lion and the Mouse/en/pages/
+    - assets/stories/The Lion and the Mouse/en/
+    - assets/stories/The Lion and the Mouse/tl/pages/
+    - assets/stories/The Lion and the Mouse/tl/
+    - assets/stories/The Ant and the Grasshopper/en/pages/
+    - assets/stories/The Ant and the Grasshopper/en/
+    - assets/stories/The Ant and the Grasshopper/tl/pages/
+    - assets/stories/The Ant and the Grasshopper/tl/
+    - assets/stories/Why the Ocean Is Salty/en/pages/
+    - assets/stories/Why the Ocean Is Salty/en/
+    - assets/stories/Why the Ocean Is Salty/tl/pages/
+    - assets/stories/Why the Ocean Is Salty/tl/
+    - assets/stories/Why the Sky Is High/en/pages/
+    - assets/stories/Why the Sky Is High/en/
+    - assets/stories/Why the Sky Is High/tl/pages/
+    - assets/stories/Why the Sky Is High/tl/
+    - assets/stories/Legend of the PineApple/en/pages/
+    - assets/stories/Legend of the PineApple/en/
+    - assets/stories/Legend of the PineApple/tl/pages/
+    - assets/stories/Legend of the PineApple/tl/
+    - assets/stories/Stories of Juan Tamad/en/pages/
+    - assets/stories/Stories of Juan Tamad/en/
+    - assets/stories/Stories of Juan Tamad/tl/pages/
+    - assets/stories/Stories of Juan Tamad/tl/
+  # Newly added titles (explicit include for folders with spaces)
+    - assets/stories/A lolong time ago/en/pages/
+    - assets/stories/A lolong time ago/en/
+    - assets/stories/A lolong time ago/tl/pages/
+    - assets/stories/A lolong time ago/tl/
+    - assets/stories/ang alamat ng palay/en/pages/
+    - assets/stories/ang alamat ng palay/en/  
+    - assets/stories/ang alamat ng palay/tl/pages/
+    - assets/stories/ang alamat ng palay/tl/
+    - assets/stories/Ang Mahiyaing Manok/en/pages/
+    - assets/stories/Ang Mahiyaing Manok/en/
+    - assets/stories/Ang Mahiyaing Manok/tl/pages/
+    - assets/stories/Ang Mahiyaing Manok/tl/
+    - assets/stories/ang pambihirang sombrero/en/pages/
+    - assets/stories/ang pambihirang sombrero/en/
+    - assets/stories/ang pambihirang sombrero/tl/pages/
+    - assets/stories/ang pambihirang sombrero/tl/
+    - assets/stories/Araw sa palengke/en/pages/
+    - assets/stories/Araw sa palengke/en/
+    - assets/stories/Araw sa palengke/tl/pages/
+    - assets/stories/Araw sa palengke/tl/
+    - assets/stories/Hating Kapatid/en/pages/
+    - assets/stories/Hating Kapatid/en/
+    - assets/stories/Hating Kapatid/tl/pages/
+    - assets/stories/Hating Kapatid/tl/
+    - assets/stories/Munting patak ng ulan/en/pages/
+    - assets/stories/Munting patak ng ulan/en/
+    - assets/stories/Munting patak ng ulan/tl/pages/
+    - assets/stories/Munting patak ng ulan/tl/
+    - assets/stories/Naku Naku Nakuuu/en/pages/
+    - assets/stories/Naku Naku Nakuuu/en/
+    - assets/stories/Naku Naku Nakuuu/tl/pages/
+    - assets/stories/Naku Naku Nakuuu/tl/
+    - assets/stories/Our Nipa Hut/en/pages/
+    - assets/stories/Our Nipa Hut/en/
+    - assets/stories/Our Nipa Hut/tl/pages/
+    - assets/stories/Our Nipa Hut/tl/
+    - assets/stories/Papel de Liha/en/pages/
+    - assets/stories/Papel de Liha/en/
+    - assets/stories/Papel de Liha/tl/pages/
+    - assets/stories/Papel de Liha/tl/
+    - assets/stories/Si emang engkantada at ang tatlong haragan/en/pages/
+    - assets/stories/Si emang engkantada at ang tatlong haragan/en/
+    - assets/stories/Si emang engkantada at ang tatlong haragan/tl/pages/
+    - assets/stories/Si emang engkantada at ang tatlong haragan/tl/
+    - assets/stories/Si Pilandok sa Pulo ng Pawikan/en/pages/
+    - assets/stories/Si Pilandok sa Pulo ng Pawikan/en/
+    - assets/stories/Si Pilandok sa Pulo ng Pawikan/tl/pages/
+    - assets/stories/Si Pilandok sa Pulo ng Pawikan/tl/
+    - assets/stories/Si putot/en/pages/
+    - assets/stories/Si putot/en/
+    - assets/stories/Si putot/tl/pages/
+    - assets/stories/Si putot/tl/
+    - assets/stories/Bahay Kubo/en/pages/
+    - assets/stories/Bahay Kubo/en/
+    - assets/stories/Bahay Kubo/tl/pages/
+    - assets/stories/Bahay Kubo/tl/
+    - assets/stories/Sandosenang Sapatos/en/pages/
+    - assets/stories/Sandosenang Sapatos/en/
+    - assets/stories/Sandosenang Sapatos/tl/pages/
+    - assets/stories/Sandosenang Sapatos/tl/
+    - assets/stories/The Mats/en/pages/
+    - assets/stories/The Mats/en/
+    - assets/stories/The Mats/tl/pages/
+    - assets/stories/The Mats/tl/
     - assets/sounds/
   fonts:
     - family: Growback

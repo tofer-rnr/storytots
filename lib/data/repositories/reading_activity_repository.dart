@@ -142,12 +142,58 @@ class ReadingActivityRepository {
           continue;
         }
         // Best-effort insert (table: reading_activity). If table doesn't exist, ignore.
-        await supa.from('reading_activity').insert(item);
+  await supa.from('reading_activity').upsert(item, onConflict: 'user_id,started_at');
       } catch (_) {
         remaining.add(item);
       }
     }
 
     await prefs.setString(_queueKey, json.encode(remaining));
+  }
+
+  /// DB-first version of today's stats. Falls back to local if not signed in or on error.
+  Future<LanguageStats> getTodayLanguageStatsDbFirst() async {
+    final client = Supabase.instance.client;
+    final uid = client.auth.currentUser?.id;
+    if (uid == null) {
+      return getTodayLanguageStats();
+    }
+    try {
+      final dayStr = _dayKey(DateTime.now());
+      final rows = await client
+          .from('reading_activity')
+          .select('language, duration_sec, words_count')
+          .eq('user_id', uid)
+          .eq('day', dayStr);
+
+      int enSec = 0, tlSec = 0, words = 0;
+      for (final r in (rows as List)) {
+        final lang = (r['language'] as String?)?.toLowerCase() == 'tl'
+            ? 'tl'
+            : 'en';
+        final sec = (r['duration_sec'] as num?)?.toInt() ?? 0;
+        final wc = (r['words_count'] as num?)?.toInt() ?? 0;
+        words += wc;
+        if (lang == 'tl') tlSec += sec; else enSec += sec;
+      }
+
+      final totalSec = enSec + tlSec;
+      final enMin = (enSec / 60).floor();
+      final tlMin = (tlSec / 60).floor();
+      final totalMin = (totalSec / 60).floor();
+      final pct = (totalSec / (dailyGoalMinutes * 60)).clamp(0, 1).toDouble();
+      final wpm = totalSec > 0 ? ((words * 60) / totalSec).round() : 0;
+
+      return LanguageStats(
+        englishMinutes: enMin,
+        filipinoMinutes: tlMin,
+        totalMinutes: totalMin,
+        activityPercent: pct,
+        totalWords: words,
+        wpm: wpm,
+      );
+    } catch (_) {
+      return getTodayLanguageStats();
+    }
   }
 }

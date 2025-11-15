@@ -21,6 +21,76 @@ class StoryIndexItem {
 
 class StoriesIndex {
   static const List<StoryIndexItem> items = [
+    // Bahay Kubo
+    StoryIndexItem(
+      slug: 'bahay-kubo',
+      title: 'Bahay Kubo',
+      language: 'en',
+      pageCount: 1,
+      synopsisPath: 'assets/stories/Bahay Kubo/en/synopsis.txt',
+      page1Path: 'assets/stories/Bahay Kubo/en/pages/001.txt',
+      coverAsset: 'assets/images/covers/Bahay_Kubo.jpg',
+    ),
+    StoryIndexItem(
+      slug: 'bahay-kubo',
+      title: 'Bahay Kubo',
+      language: 'tl',
+      pageCount: 1,
+      synopsisPath: 'assets/stories/Bahay Kubo/tl/synopsis.txt',
+      page1Path: 'assets/stories/Bahay Kubo/tl/pages/001.txt',
+      coverAsset: 'assets/images/covers/Bahay_Kubo.jpg',
+    ),
+
+    // Sandosenang Sapatos
+    StoryIndexItem(
+      slug: 'sandosenang-sapatos',
+      title: 'Sandosenang Sapatos',
+      language: 'en',
+      pageCount: 1,
+      synopsisPath: 'assets/stories/Sandosenang Sapatos/en/synopsis.txt',
+      page1Path: 'assets/stories/Sandosenang Sapatos/en/pages/001.txt',
+      coverAsset: 'assets/images/covers/Sandosenang_Sapatos.jpg',
+    ),
+    StoryIndexItem(
+      slug: 'sandosenang-sapatos',
+      title: 'Sandosenang Sapatos',
+      language: 'tl',
+      pageCount: 1,
+      synopsisPath: 'assets/stories/Sandosenang Sapatos/tl/synopsis.txt',
+      page1Path: 'assets/stories/Sandosenang Sapatos/tl/pages/001.txt',
+      coverAsset: 'assets/images/covers/Sandosenang_Sapatos.jpg',
+    ),
+
+    // The Mats
+    StoryIndexItem(
+      slug: 'the-mats',
+      title: 'The Mats',
+      language: 'en',
+      pageCount: 1,
+      synopsisPath: 'assets/stories/The Mats/en/synopsis.txt',
+      page1Path: 'assets/stories/The Mats/en/pages/001.txt',
+      coverAsset: 'assets/images/covers/The_Mats.jpg',
+    ),
+    StoryIndexItem(
+      slug: 'the-mats',
+      title: 'The Mats',
+      language: 'tl',
+      pageCount: 1,
+      synopsisPath: 'assets/stories/The Mats/tl/synopsis.txt',
+      page1Path: 'assets/stories/The Mats/tl/pages/001.txt',
+      coverAsset: 'assets/images/covers/The_Mats.jpg',
+    ),
+
+    // Ang Barumbadong Bus (assume Tagalog only unless EN exists)
+    StoryIndexItem(
+      slug: 'ang-barumbadong-bus',
+      title: 'Ang Barumbadong Bus',
+      language: 'tl',
+      pageCount: 1,
+      synopsisPath: 'assets/stories/Ang Barumbadong Bus/tl/synopsis.txt',
+      page1Path: 'assets/stories/Ang Barumbadong Bus/tl/pages/001.txt',
+      coverAsset: 'assets/images/covers/Ang_Barumbadong_Bus.jpg',
+    ),
     // Monkey and Turtle (English + Tagalog)
     StoryIndexItem(
       slug: 'the-monkey-and-the-turtle',

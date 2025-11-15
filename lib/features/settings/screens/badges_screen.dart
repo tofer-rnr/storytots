@@ -31,14 +31,16 @@ class _BadgesScreenState extends State<BadgesScreen> {
     try {
       final stats = await ProfileStatsService().getStatsDbFirst();
       final today = await ReadingActivityRepository().getTodayLanguageStats();
-      final earned = await repo.evaluateAndSave(
+  await repo.evaluateAndSave(
         userId: uid,
         stats: stats,
         today: today,
         practicedTrickyWords: 0,
       );
-      final locked = await repo.listLocked(uid);
-      final pts = earned.fold<int>(0, (sum, b) => sum + b.points);
+  // Include custom badges as well
+  final earned = await repo.listEarned(uid);
+  final locked = await repo.listLocked(uid); // static only
+  final pts = earned.fold<int>(0, (sum, b) => sum + b.points);
       if (!mounted) return;
       setState(() {
         _earned = earned;
@@ -47,8 +49,22 @@ class _BadgesScreenState extends State<BadgesScreen> {
         _loading = false;
       });
     } catch (_) {
-      if (!mounted) return;
-      setState(() => _loading = false);
+      // Fallback: still attempt to list locally earned badges (guest/offline)
+      try {
+        final earned = await repo.listEarned(uid);
+        final locked = await repo.listLocked(uid);
+        final pts = earned.fold<int>(0, (sum, b) => sum + b.points);
+        if (!mounted) return;
+        setState(() {
+          _earned = earned;
+          _locked = locked;
+          _points = pts;
+          _loading = false;
+        });
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _loading = false);
+      }
     }
   }
 
