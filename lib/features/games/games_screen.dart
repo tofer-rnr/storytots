@@ -8,8 +8,11 @@ import '../../data/services/profile_stats_service.dart';
 
 import '../../core/constants.dart';
 import '../../data/repositories/assessment_repository.dart';
+import '../../data/repositories/assessment_progress_repository.dart';
 import '../../data/repositories/stories_repository.dart';
 import '../../data/cover_assets.dart';
+import '../shell/main_tabs.dart';
+import '../../data/repositories/game_activity_repository.dart';
 
 class GamesScreen extends StatefulWidget {
   const GamesScreen({super.key});
@@ -179,6 +182,12 @@ class StoryAssessmentScreen extends StatefulWidget {
 class _StoryAssessmentScreenState extends State<StoryAssessmentScreen> {
   int _score = 0;
   int _current = 0;
+  bool _started = false; // shows intro first
+  int? _selectedIndex; // selected answer per question
+  final _progressRepo = AssessmentProgressRepository();
+  final _gameRepo = GameActivityRepository();
+  late DateTime _lastTick;
+  late List<int?> _selectedPerQuestion;
 
   late List<_Question> _questions;
 
@@ -186,6 +195,16 @@ class _StoryAssessmentScreenState extends State<StoryAssessmentScreen> {
   void initState() {
     super.initState();
     _questions = _generateQuestions(widget.story);
+  _selectedPerQuestion = List<int?>.filled(_questions.length, null);
+  _maybeOfferResume();
+  _lastTick = DateTime.now();
+  }
+
+  @override
+  void dispose() {
+    // Flush any remaining time spent on the screen
+    _addGameTimeSinceLastTick();
+    super.dispose();
   }
 
   List<_Question> _generateQuestions(Story s) {
@@ -1315,6 +1334,72 @@ class _StoryAssessmentScreenState extends State<StoryAssessmentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_started) {
+      final total = _questions.length;
+      final badge = ach.AchievementsRepository.all
+          .firstWhere((b) => b.id == 'quiz_ace_80', orElse: () => ach.AchievementsRepository.all.first);
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: const Color(brandPurple),
+          foregroundColor: Colors.white,
+          title: const Text('Assessment'),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.story.title,
+                style: const TextStyle(
+                  fontFamily: 'RustyHooks',
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _introRow(icon: Icons.format_list_bulleted, title: '$total', subtitle: 'Multiple choice/True or False'),
+              const SizedBox(height: 14),
+              _introRow(icon: Icons.timer, title: '2 mins', subtitle: 'Per Questions'),
+              const SizedBox(height: 14),
+              _badgeIntroRow(badge),
+              const SizedBox(height: 28),
+              const Text(
+                'Before you start',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Answer each question by tapping your choice. Try your best—score 80% or higher to earn a badge!',
+                style: TextStyle(color: Colors.black54),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => setState(() => _started = true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(brandPurple),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text(
+                    'Start Test',
+                    style: TextStyle(fontSize: 18, letterSpacing: 1.2),
+                  ),
+                ),
+              ),
+              // Resume prompt is now shown as a modal when the screen loads (see _maybeOfferResume)
+            ],
+          ),
+        ),
+      );
+    }
+
     final q = _questions[_current];
     return Scaffold(
       appBar: AppBar(
@@ -1327,65 +1412,108 @@ class _StoryAssessmentScreenState extends State<StoryAssessmentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            LinearProgressIndicator(
-              value: (_current + 1) / _questions.length,
-              backgroundColor: Colors.grey[300],
-              color: const Color(brandPurple),
+            // Top progress bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: LinearProgressIndicator(
+                value: (_current + 1) / _questions.length,
+                backgroundColor: Colors.grey[300],
+                color: const Color(brandPurple),
+                minHeight: 14,
+              ),
             ),
             const SizedBox(height: 16),
+            // Question card
             Card(
+              color: const Color(0xFF322654),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
+              elevation: 2,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Header "Question n/total"
                     Text(
-                      q.prompt,
+                      'Question ${_current + 1}/${_questions.length}',
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'RustyHooks',
-                        letterSpacing: 1.2,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    for (final opt in q.options)
-                      Padding(
+                    const SizedBox(height: 10),
+                    // White box with the question
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                      child: Text(
+                        q.prompt.replaceFirst(RegExp(r'^\d+\.\s*'), ''),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Choices
+        ...List.generate(q.options.length, (i) {
+                      final opt = q.options[i];
+                      final selected = _selectedIndex == i;
+                      final letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                      return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: ElevatedButton(
-                          onPressed: () => _answer(opt == q.correct),
+          onPressed: () => setState(() => _selectedIndex = i),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black87,
-                            side: BorderSide(color: Colors.grey.shade300),
+                            backgroundColor: selected ? const Color(0xFF221A43) : Colors.white,
+                            foregroundColor: selected ? Colors.white : Colors.black87,
+                            elevation: selected ? 0 : 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Text(
-                              opt,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'OddlyCalming',
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                '${letters[i]} ) $opt',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'OddlyCalming',
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
+                      );
+                    }),
                   ],
                 ),
               ),
             ),
             const Spacer(),
-            Text(
-              'Score: $_score',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _selectedIndex == null ? null : _next,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(brandPurple),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: Text(
+                  _current < _questions.length - 1 ? 'Next Question' : 'Finish',
+                  style: const TextStyle(fontSize: 18, letterSpacing: 0.5, color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
           ],
         ),
@@ -1393,56 +1521,271 @@ class _StoryAssessmentScreenState extends State<StoryAssessmentScreen> {
     );
   }
 
-  void _answer(bool correct) {
-    if (correct) _score++;
+  Widget _introRow({required IconData icon, required String title, required String subtitle}) {
+    return Row(
+      children: [
+        Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: Colors.black54),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF5A4D8E))),
+            const SizedBox(height: 2),
+            Text(subtitle, style: const TextStyle(color: Colors.black54)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _badgeIntroRow(ach.Badge badge) {
+    return Row(
+      children: [
+        Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Image.asset(badge.iconAsset),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Badge: ${badge.title}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF5A4D8E)),
+            ),
+            const SizedBox(height: 2),
+            const Text('Score 80%+ to earn', style: TextStyle(color: Colors.black54)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _next() {
+    if (_selectedIndex == null) return;
+  _addGameTimeSinceLastTick();
+    // Update selection storage
+    _selectedPerQuestion[_current] = _selectedIndex;
+    // Recompute score from selections to keep consistent even if user resumes and changes older answers in future extensions
+    _score = 0;
+    for (var i = 0; i < _questions.length; i++) {
+      final sel = _selectedPerQuestion[i];
+      if (sel != null && _questions[i].options[sel] == _questions[i].correct) {
+        _score++;
+      }
+    }
+    // Save progress (including selection for this index)
+    _saveProgress();
     if (_current < _questions.length - 1) {
-      setState(() => _current++);
+      setState(() {
+        _current++;
+        _selectedIndex = _selectedPerQuestion[_current];
+      });
+      _saveProgress();
     } else {
+      // Completed – clear saved progress and show dialog
+      _progressRepo.clear(widget.story.id);
       _showAssessmentResultDialog(score: _score, total: _questions.length);
     }
   }
 
+  void _addGameTimeSinceLastTick() {
+    final now = DateTime.now();
+    final delta = now.difference(_lastTick);
+    _lastTick = now;
+    if (delta.inSeconds > 0) {
+      // Fire-and-forget; best-effort local tracking
+      _gameRepo.addGameTime(delta);
+    }
+  }
+
+  Future<void> _saveProgress() async {
+    await _progressRepo.saveProgress(AssessmentProgress(
+      storyId: widget.story.id,
+      currentIndex: _current,
+      score: _score,
+      selectedIndices: _selectedPerQuestion,
+    ));
+  }
+
+  Future<void> _maybeOfferResume() async {
+    final p = await _progressRepo.getProgress(widget.story.id);
+    if (p == null || p.currentIndex <= 0) return;
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final choice = await showModalBottomSheet<String>(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        ),
+        builder: (ctx) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Resume assessment?',
+                  style: TextStyle(
+                    fontFamily: 'RustyHooks',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'You stopped at question ${p.currentIndex + 1}. Continue where you left off or start over?',
+                  style: const TextStyle(color: Colors.black87),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx, 'reset'),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Start Over'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, 'resume'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(brandPurple),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Resume'),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          );
+        },
+      );
+
+      if (!mounted) return;
+      if (choice == 'resume') {
+        setState(() {
+          _started = true;
+          _current = p.currentIndex;
+          _score = p.score;
+          for (var i = 0; i < _selectedPerQuestion.length; i++) {
+            _selectedPerQuestion[i] =
+                (i < p.selectedIndices.length) ? p.selectedIndices[i] : null;
+          }
+          _selectedIndex = _selectedPerQuestion[_current];
+        });
+      } else if (choice == 'reset') {
+        await _progressRepo.clear(widget.story.id);
+        if (!mounted) return;
+        setState(() {
+          _started = false;
+          _current = 0;
+          _score = 0;
+          _selectedPerQuestion = List<int?>.filled(_questions.length, null);
+          _selectedIndex = null;
+        });
+      }
+    });
+  }
+
   Future<void> _showAssessmentResultDialog({required int score, required int total}) async {
+  _addGameTimeSinceLastTick();
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    final stats = await ProfileStatsService().getStatsDbFirst();
-    final today = await ReadingActivityRepository().getTodayLanguageStats();
     final repo = ach.AchievementsRepository();
-    // Compute newly earned badges by diffing before/after
-    final before = await repo.listEarned(userId);
-    final after = await repo.evaluateAndSave(
-      userId: userId,
-      stats: stats,
-      today: today,
-      practicedTrickyWords: 0,
-    );
-    final beforeIds = before.map((b) => b.id).toSet();
-    final newly = after.where((b) => !beforeIds.contains(b.id)).toList();
-    // Prefer to show a "completed book" style badge (first_read) if applicable
-    ach.Badge? completedBadge = after.firstWhere(
-      (b) => b.id == 'first_read',
-      orElse: () => newly.isNotEmpty ? newly.first : (after.isNotEmpty ? after.first : ach.AchievementsRepository.all.first),
-    );
+    final pct = total == 0 ? 0.0 : (score * 100.0 / total);
+    // Fire-and-forget: analytics + achievements; don't block the dialog
+    () async {
+      try {
+        if (userId.isNotEmpty) {
+          await Supabase.instance.client.from('assessment_results').insert({
+            'user_id': userId,
+            'story_id': widget.story.id,
+            'score': score,
+            'total': total,
+            'pct': pct,
+            'selected_indices': _selectedPerQuestion,
+            'completed_at': DateTime.now().toIso8601String(),
+          });
+        }
+      } catch (_) {}
+      try {
+        if (pct >= 80) {
+          // Directly mark the static quiz ace badge now so it appears even if stats fetch fails
+          await repo.addBadge(userId, 'quiz_ace_80');
+        }
+        final stats = await ProfileStatsService().getStatsDbFirst();
+        final today = await ReadingActivityRepository().getTodayLanguageStats();
+        await repo.evaluateAndSave(
+          userId: userId,
+          stats: stats,
+          today: today,
+          practicedTrickyWords: 0,
+          quizScorePct: pct,
+        );
+        if (pct >= 80) {
+          await repo.awardStoryQuizBadge(
+            userId: userId,
+            storyId: widget.story.id,
+            storyTitle: widget.story.title,
+          );
+        }
+      } catch (_) {}
+    }();
+    // We don't rely on achievements result here; UI shows a story-specific badge
 
     if (!mounted) return;
     // Show a fun animated dialog
     // ignore: use_build_context_synchronously
-    await showDialog(
+    final action = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _AssessmentResultDialog(
+        story: widget.story,
         score: score,
         total: total,
-        badge: completedBadge,
+        badge: null,
       ),
     );
+    if (action == 'library' && mounted) {
+      // Go to Library tab
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainTabs(initialIndex: 2)),
+        (route) => false,
+      );
+    }
   }
 }
 
 class _AssessmentResultDialog extends StatefulWidget {
+  final Story story;
   final int score;
   final int total;
   final ach.Badge? badge;
-  const _AssessmentResultDialog({required this.score, required this.total, this.badge});
+  const _AssessmentResultDialog({required this.story, required this.score, required this.total, this.badge});
 
   @override
   State<_AssessmentResultDialog> createState() => _AssessmentResultDialogState();
@@ -1477,120 +1820,151 @@ class _AssessmentResultDialogState extends State<_AssessmentResultDialog> {
   @override
   Widget build(BuildContext context) {
     final pct = (widget.score / (widget.total == 0 ? 1 : widget.total));
-    final nice = pct >= 0.8
-        ? 'Amazing reader!'
-        : pct >= 0.5
-            ? 'Great effort!'
-            : 'You did it!';
+    final pctInt = (pct * 100).round();
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
+      backgroundColor: const Color(0xFF31264E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.lightBlueAccent, width: 2),
+        ),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-              child: Container(
-                key: ValueKey(_frame),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [
-                    Colors.deepPurple.shade300,
-                    Colors.purple.shade400,
-                  ]),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
-                  ],
-                ),
-                child: Image.asset(_icons[_frame], width: 88, height: 88),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              nice,
-              style: const TextStyle(
-                fontFamily: 'RustyHooks',
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Your score: ${widget.score} / ${widget.total}',
-              style: const TextStyle(
-                fontFamily: 'OddlyCalming',
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Badge row
-            if (widget.badge != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(widget.badge!.iconAsset, width: 28, height: 28),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Badge: ${widget.badge!.title}',
-                      style: const TextStyle(
-                        fontFamily: 'OddlyCalming',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 12),
-            // Positive message
             const Text(
-              'Reading is fun! Keep exploring stories and quizzes.',
+              'Result of your Assessment',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'OddlyCalming',
-                color: Colors.black87,
-              ),
+              style: TextStyle(color: Colors.white70, fontSize: 16, letterSpacing: 0.5),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+              child: Column(
+                children: [
+                  const Text(
+                    'Congratulations! You\nhave scored',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
-                    child: const Text('Close'),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6A1B9A),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$pctInt%',
+                    style: const TextStyle(
+                      fontSize: 44,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
                     ),
-                    child: const Text('Keep Reading'),
                   ),
+                  const SizedBox(height: 8),
+                  const Divider(thickness: 2),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'You Earned the Badge',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 10),
+                  _StoryBadgeWidget(story: widget.story),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop('library'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(brandPurple),
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-              ],
+                child: const Text('View More Stories'),
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _StoryBadgeWidget extends StatelessWidget {
+  final Story story;
+  const _StoryBadgeWidget({required this.story});
+
+  // Generate a unique color pair per story by hashing its id/title
+  (Color, Color) _colors() {
+    final base = story.id.isNotEmpty ? story.id : story.title;
+    int hash = 0;
+    for (var c in base.codeUnits) {
+      hash = 0x1fffffff & (hash * 31 + c);
+    }
+    final hue1 = (hash % 360).toDouble();
+    final hue2 = ((hash + 90) % 360).toDouble();
+    return (
+      HSLColor.fromAHSL(1, hue1, 0.6, 0.5).toColor(),
+      HSLColor.fromAHSL(1, hue2, 0.7, 0.45).toColor(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (c1, c2) = _colors();
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: 110,
+          height: 110,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(colors: [c1, c2]),
+            boxShadow: const [
+              BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+            ],
+          ),
+          child: Center(
+            child: Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(Icons.auto_awesome, color: c1, size: 36),
+              ),
+            ),
+          ),
+        ),
+        // Sparkles
+        Positioned(
+          right: 10,
+          top: 8,
+          child: Icon(Icons.star, color: Colors.amber.shade400, size: 18),
+        ),
+        Positioned(
+          left: 16,
+          bottom: 6,
+          child: Icon(Icons.star, color: Colors.amber.shade300, size: 14),
+        ),
+        Positioned(
+          left: 6,
+          top: 12,
+          child: Icon(Icons.star_border, color: Colors.amber.shade500, size: 16),
+        ),
+      ],
     );
   }
 }

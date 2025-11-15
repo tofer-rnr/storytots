@@ -72,6 +72,15 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     } else if (lowerTitle.contains('pineapple') ||
         lowerTitle.contains('piña')) {
       return 'legend-of-the-pineapple';
+    } else if (lowerTitle.contains('bahay') && lowerTitle.contains('kubo')) {
+      return 'bahay-kubo';
+    } else if (lowerTitle.contains('sandosenang') && lowerTitle.contains('sapatos')) {
+      return 'sandosenang-sapatos';
+    } else if (lowerTitle.contains('mats')) {
+      return 'the-mats';
+    } else if ((lowerTitle.contains('barumbadong') && lowerTitle.contains('bus')) ||
+        (lowerTitle.contains('barumbado') && lowerTitle.contains('bus'))) {
+      return 'ang-barumbadong-bus';
     }
 
     // If no special case matches, normalize the string
